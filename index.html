@@ -1,0 +1,2705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Mizoram SRLM Dashboard</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f7fb;color:#17233c}
+.dashboard{max-width:1600px;margin:auto;padding:18px}
+.header{background:linear-gradient(135deg,#073866,#104d86);color:#fff;border-radius:14px;padding:22px 26px;display:flex;justify-content:space-between;align-items:center;gap:20px;box-shadow:0 5px 18px rgba(0,0,0,.12)}
+.header h1{margin:0 0 6px;font-size:28px}.header p{margin:0;opacity:.88}
+.overall{background:#fff;color:#17345d;border-radius:12px;display:grid;grid-template-columns:repeat(4,1fr);min-width:620px;overflow:hidden}
+.overall div{padding:13px 18px;text-align:center;border-left:1px solid #dce4ee}.overall div:first-child{border-left:0}
+.overall small{display:block;font-weight:700;font-size:12px;margin-bottom:5px}.overall strong{font-size:22px}
+.controls{margin:18px 0;background:#fff;border-radius:12px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.controls label{font-weight:700;font-size:14px}select,input,button{border:1px solid #ccd6e2;border-radius:7px;padding:9px 11px;background:#fff;font-size:14px}
+input{min-width:220px}button{cursor:pointer;font-weight:700}button:hover{background:#eef5fc}
+.status-btn.active-good{background:#e7f6ec;border-color:#8bc69c;color:#08752c}.status-btn.active-bad{background:#fdeaea;border-color:#e2a0a0;color:#b21f1f}.status-btn.active-all{background:#e9f1fb;border-color:#9bb9dc;color:#124b83}
+#refreshBtn{background:#0d477d;color:#fff;border-color:#0d477d}
+.kyc-refresh-btn{appearance:none;border:1px solid #9bb9dc;background:#e9f1fb;color:#124b83;width:34px;height:34px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;line-height:1;cursor:pointer;padding:0;transition:.15s ease;flex:0 0 auto}
+.kyc-refresh-btn:hover{transform:rotate(30deg);background:#dceafa}
+.kyc-refresh-btn:active{transform:rotate(120deg) scale(.96)}
+.kyc-refresh-btn:disabled{opacity:.55;cursor:wait;transform:none}.status{font-size:12px;color:#63748a;margin-left:auto}.status.ok{color:#16753a}.status.error{color:#b52121}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.metric-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,.06);border-top:4px solid #3178b9}
+.metric-card h3{margin:0 0 6px;font-size:15px;color:#183e68}.metric-card .value{font-size:25px;font-weight:800}.metric-card .sub{font-size:12px;color:#66758a;margin-top:4px}
+.panel{background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06);overflow:hidden;margin-bottom:18px}
+.panel-title{padding:15px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid #e1e7ef}.panel-title h2{margin:0;font-size:18px}.panel-title span{color:#6d7c91;font-size:12px}
+.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:1250px}
+th,td{padding:10px 12px;border-bottom:1px solid #e9edf2;text-align:left;font-size:13px;white-space:nowrap}
+th{background:#0d477d;color:#fff;position:sticky;top:0;z-index:2;cursor:pointer;user-select:none}th:hover{background:#155b98}
+th .arrow{margin-left:5px;opacity:.7}tr:hover td{background:#f7faff}.good-row td:first-child{border-left:4px solid #219653}.bad-row td:first-child{border-left:4px solid #d93030}
+.connectivity{font-weight:800;padding:5px 8px;border-radius:20px;display:inline-block;font-size:11px}.good{color:#117333;background:#e9f7ed}.bad{color:#b52121;background:#fdecec}
+.bar-cell{min-width:175px}.bar{height:8px;width:100%;background:#edf1f5;border-radius:20px;overflow:hidden;margin-top:5px}.bar>span{display:block;height:100%;border-radius:20px}
+.bank{background:#65b46f}.ekyc{background:#65a7dc}.mobile{background:#9a78c9}.pct{font-weight:800}
+.legend{display:flex;gap:18px;align-items:center;flex-wrap:wrap;padding:12px 18px;font-size:12px;color:#59697e}.legend span{display:flex;align-items:center;gap:6px}.dot{width:10px;height:10px;border-radius:50%;display:inline-block}.good-dot{background:#219653}.bad-dot{background:#d93030}
+.footer{color:#6b788b;font-size:11px;padding:5px 3px 15px}.loading{padding:35px;text-align:center;color:#64748b}
+@media(max-width:1100px){.header{flex-direction:column;align-items:stretch}.overall{min-width:0;width:100%}.cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:650px){.dashboard{padding:8px}.overall{grid-template-columns:repeat(2,1fr)}.cards{grid-template-columns:1fr}.header h1{font-size:22px}.overall strong{font-size:18px}.status{margin-left:0;width:100%}}
+
+/* Percentage performance scale:
+   80%+ = green, 30%-79.99% = yellow, below 30% = red.
+   The classes intensify toward the stronger end of each range. */
+.bar > span.pct-green-low { background:#8bcf8f; }
+.bar > span.pct-green-mid { background:#4caf50; }
+.bar > span.pct-green-high { background:#087f23; }
+.bar > span.pct-yellow-low { background:#ffd54f; }
+.bar > span.pct-yellow-mid { background:#f4b400; }
+.bar > span.pct-yellow-high { background:#d89b00; }
+.bar > span.pct-red-low { background:#b71c1c; }
+.bar > span.pct-red-mid { background:#d93025; }
+.bar > span.pct-red-high { background:#ef6c00; }
+.pct-green-low, .pct-green-mid, .pct-green-high,
+.pct-yellow-low, .pct-yellow-mid, .pct-yellow-high,
+.pct-red-low, .pct-red-mid, .pct-red-high { transition:background .2s ease; }
+
+/* Combined dashboard additions — KYC styles/code above remain unchanged */
+.combo-tabs{display:flex;gap:8px;background:#fff;padding:8px;margin-top:18px;border-radius:12px 12px 0 0;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.combo-tab{border:0;background:#edf2f7;color:#25415f;padding:12px 25px;border-radius:8px;font-weight:800;cursor:pointer}
+.combo-tab.active{background:#0d477d;color:#fff}.combo-panel{display:none}.combo-panel.active{display:block}
+.extra-controls{margin:18px 0;background:#fff;border-radius:12px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.extra-controls label{font-weight:700;font-size:14px}.extra-controls input,.extra-controls select{border:1px solid #ccd6e2;border-radius:7px;padding:9px 11px;background:#fff;font-size:14px}
+.extra-controls input{min-width:240px}.extra-status{font-size:12px;color:#63748a;margin-left:auto}.extra-status.ok{color:#16753a}.extra-status.error{color:#b52121}
+.extra-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.extra-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,.06);border-top:4px solid #3178b9}
+.extra-card h3{margin:0 0 6px;font-size:15px;color:#183e68}.extra-card .value{font-size:25px;font-weight:800}.extra-card .sub{font-size:12px;color:#66758a;margin-top:4px}
+.extra-panel{background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06);overflow:hidden;margin-bottom:18px}
+.extra-title{padding:15px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid #e1e7ef}.extra-title h2{margin:0;font-size:18px}.extra-title span{color:#6d7c91;font-size:12px}
+.extra-note{padding:12px 18px;font-size:12px;color:#59697e;border-bottom:1px solid #e9edf2}
+.extra-table-wrap{overflow:auto}.extra-table{width:100%;border-collapse:collapse;min-width:1200px}
+.extra-table th,.extra-table td{padding:10px 12px;border-bottom:1px solid #e9edf2;text-align:left;font-size:13px;white-space:nowrap}
+.extra-table th{background:#0d477d;color:#fff;position:sticky;top:0;z-index:2;cursor:pointer}.extra-table tr:hover td{background:#f7faff}
+.extra-pct-cell{min-width:230px}.extra-bar{height:9px;width:100%;background:#edf1f5;border-radius:20px;overflow:hidden;margin-top:5px}.extra-bar span{display:block;height:100%;border-radius:20px}
+.extra-g1{background:#8bcf8f}.extra-g2{background:#4caf50}.extra-g3{background:#087f23}.extra-y1{background:#ffd54f}.extra-y2{background:#f4b400}.extra-y3{background:#d89b00}.extra-r1{background:#ef6c00}.extra-r2{background:#d93025}.extra-r3{background:#b71c1c}
+.extra-good{color:#117333;background:#e9f7ed;font-weight:800;padding:5px 8px;border-radius:20px;font-size:11px}.extra-bad{color:#b52121;background:#fdecec;font-weight:800;padding:5px 8px;border-radius:20px;font-size:11px}
+.extra-loading{padding:35px;text-align:center;color:#64748b}
+@media(max-width:1100px){.extra-cards{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.combo-tabs{overflow:auto}.extra-cards{grid-template-columns:1fr}.extra-status{margin-left:0;width:100%}}
+
+
+/* Enhanced tab themes */
+.combo-tabs .combo-tab:nth-child(1){background:#e8eef7;color:#174a7e}
+.combo-tabs .combo-tab:nth-child(1).active{background:#174a7e;color:#fff}
+.combo-tabs .combo-tab:nth-child(2){background:#eaf6ed;color:#16723b}
+.combo-tabs .combo-tab:nth-child(2).active{background:#16723b;color:#fff}
+.combo-tabs .combo-tab:nth-child(3){background:#fff3df;color:#a65b00}
+.combo-tabs .combo-tab:nth-child(3).active{background:#c56a00;color:#fff}
+.extra-connect{font-weight:700}
+
+
+/* Final responsive/header enhancements */
+.extra-title h2{max-width:72%}
+.extra-table th{white-space:normal;vertical-align:middle;line-height:1.2;min-width:70px}
+.extra-table th:nth-child(8),.extra-table th:nth-child(7){min-width:155px}
+.extra-table th:nth-child(6),.extra-table th:nth-child(11){min-width:175px}
+.extra-table th:nth-child(9),.extra-table th:nth-child(10){min-width:150px}
+.extra-table td{white-space:normal;vertical-align:middle}
+.extra-sort-hint{font-size:11px;opacity:.9;display:block;margin-top:3px;font-weight:600}
+.connectivity-filter{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.connectivity-filter button{padding:7px 12px;border:1px solid #ccd6e2;border-radius:20px;background:#fff;font-size:12px;font-weight:800;cursor:pointer}
+.connectivity-filter button.active{background:#174a7e;color:#fff;border-color:#174a7e}
+#darConnGroup button.good.active{background:#16723b;border-color:#16723b}
+#darConnGroup button.bad.active,#surveyConnGroup button.bad.active{background:#c62828;border-color:#c62828}
+#surveyConnGroup button.good.active{background:#16723b;border-color:#16723b}
+.state-achievement{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:0 0 18px}
+.state-achievement .extra-card{border-top-color:#6b5ca5}
+.state-achievement .state-main{background:linear-gradient(135deg,#173b67,#285d8f);color:#fff}
+.state-achievement .state-main h3,.state-achievement .state-main .sub{color:#eaf2fb}
+.state-main .value{font-size:28px}
+@media(max-width:1200px){
+ .wrap{max-width:100%;padding:12px}
+ .state-achievement{grid-template-columns:repeat(2,1fr)}
+ .extra-title h2{max-width:65%}
+}
+@media(max-width:800px){
+ header{padding:16px;display:block}
+ .headcards{min-width:0;margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr)}
+ .combo-tabs{position:sticky;top:0;z-index:20}
+ .extra-controls{align-items:stretch}
+ .extra-controls input{min-width:180px;flex:1}
+ .extra-controls label{align-self:center}
+ .state-achievement{grid-template-columns:1fr 1fr}
+ .extra-title{align-items:flex-start;flex-direction:column}
+ .extra-title h2{max-width:100%}
+ .extra-table{min-width:1100px}
+}
+@media(max-width:560px){
+ .wrap{padding:7px}
+ h1{font-size:20px}
+ header p{font-size:12px}
+ .headcards{grid-template-columns:1fr}
+ .headcards div{border-left:0!important;border-top:1px solid #dce4ee}
+ .combo-tab{padding:10px 18px;font-size:13px}
+ .extra-controls{display:grid;grid-template-columns:1fr 1fr}
+ .extra-controls label{font-size:12px}
+ .extra-controls input{grid-column:1/-1;width:100%;min-width:0}
+ .extra-controls select{width:100%}
+ .connectivity-filter{grid-column:1/-1}
+ .connectivity-filter button{flex:1}
+ .extra-status{grid-column:1/-1}
+ .state-achievement{grid-template-columns:1fr}
+ .state-achievement .extra-card{min-height:auto}
+ .extra-table{min-width:1050px}
+ .extra-title h2{font-size:16px}
+}
+
+</style>
+
+
+
+
+
+
+
+<style id="connectivity-style-final">
+/* ONE shared Connectivity button style for KYC, DAR and SURVEY */
+#kycComboPanel .status-btn,
+#kycComboPanel .status-btn.active-all,
+#darConnGroup button,
+#surveyConnGroup button {
+  appearance:none !important;
+  -webkit-appearance:none !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  box-sizing:border-box !important;
+  height:42px !important;
+  min-width:54px !important;
+  padding:0 17px !important;
+  margin:0 !important;
+  border:1px solid #cbd6e1 !important;
+  border-radius:22px !important;
+  background:#fff !important;
+  color:#19324d !important;
+  font-family:Arial,Helvetica,sans-serif !important;
+  font-size:15px !important;
+  font-weight:800 !important;
+  line-height:1 !important;
+  box-shadow:none !important;
+  cursor:pointer !important;
+  transition:background .15s ease,border-color .15s ease,color .15s ease !important;
+}
+
+#kycComboPanel .status-btn.active-all,
+#darConnGroup button.active,
+#surveyConnGroup button.active {
+  background:#174a7e !important;
+  border-color:#174a7e !important;
+  color:#fff !important;
+}
+
+#kycComboPanel .status-btn.good.active,
+#darConnGroup button.good.active,
+#surveyConnGroup button.good.active {
+  background:#16723b !important;
+  border-color:#16723b !important;
+  color:#fff !important;
+}
+
+#kycComboPanel .status-btn.bad.active,
+#darConnGroup button.bad.active,
+#surveyConnGroup button.bad.active {
+  background:#c62828 !important;
+  border-color:#c62828 !important;
+  color:#fff !important;
+}
+
+/* Unselected Good/Bad use the same semantic text colours as DAR/SURVEY */
+#kycComboPanel .status-btn.good,
+#darConnGroup button.good,
+#surveyConnGroup button.good {
+  color:#16723b !important;
+}
+
+#kycComboPanel .status-btn.bad,
+#darConnGroup button.bad,
+#surveyConnGroup button.bad {
+  color:#c62828 !important;
+}
+
+#kycComboPanel .status-btn.good.active,
+#kycComboPanel .status-btn.bad.active {
+  color:#fff !important;
+}
+
+/* Same spacing for all three Connectivity groups */
+#kycComboPanel .controls,
+#darComboPanel .extra-controls,
+#surveyComboPanel .extra-controls {
+  align-items:center !important;
+}
+</style>
+
+
+<style id="connectivity-active-colors-final">
+/* Final selected-state colours: KYC, DAR and SURVEY */
+#kycComboPanel .status-btn.active,
+#kycComboPanel .status-btn.active-all,
+#kycComboPanel .status-btn[data-status="all"].active,
+#kycComboPanel .status-btn[data-status="All"].active {
+  background:#174a7e !important;
+  border-color:#174a7e !important;
+  color:#fff !important;
+}
+
+#kycComboPanel .status-btn.active.good,
+#kycComboPanel .status-btn.active[data-status="good"],
+#kycComboPanel .status-btn.active[data-status="Good"] {
+  background:#16723b !important;
+  border-color:#16723b !important;
+  color:#fff !important;
+}
+
+#kycComboPanel .status-btn.active.bad,
+#kycComboPanel .status-btn.active[data-status="bad"],
+#kycComboPanel .status-btn.active[data-status="Bad"] {
+  background:#c62828 !important;
+  border-color:#c62828 !important;
+  color:#fff !important;
+}
+
+/* DAR/SURVEY selected states */
+#darConnGroup button.active,
+#surveyConnGroup button.active {
+  background:#174a7e !important;
+  border-color:#174a7e !important;
+  color:#fff !important;
+}
+#darConnGroup button.good.active,
+#surveyConnGroup button.good.active,
+#darConnGroup button.active[data-status="good"],
+#surveyConnGroup button.active[data-status="good"] {
+  background:#16723b !important;
+  border-color:#16723b !important;
+  color:#fff !important;
+}
+#darConnGroup button.bad.active,
+#surveyConnGroup button.bad.active,
+#darConnGroup button.active[data-status="bad"],
+#surveyConnGroup button.active[data-status="bad"] {
+  background:#c62828 !important;
+  border-color:#c62828 !important;
+  color:#fff !important;
+}
+</style>
+
+
+<style id="connectivity-final-selected-state">
+/* Final Connectivity selected colours */
+#kycComboPanel .status-btn,
+#darConnGroup button,
+#surveyConnGroup button {
+  border-radius:20px !important;
+}
+
+/* KYC: All */
+#kycComboPanel .status-btn.active-all,
+#kycComboPanel .status-btn.active[data-filter="all"],
+#kycComboPanel .status-btn[aria-pressed="true"][data-filter="all"],
+#kycComboPanel .status-btn.active:nth-of-type(1) {
+  background:#174a7e !important;
+  border-color:#174a7e !important;
+  color:#fff !important;
+}
+
+/* KYC: Good */
+#kycComboPanel .status-btn.good.active,
+#kycComboPanel .status-btn.active-good,
+#kycComboPanel .status-btn.active[data-filter="good"],
+#kycComboPanel .status-btn[aria-pressed="true"][data-filter="good"] {
+  background:#16723b !important;
+  border-color:#16723b !important;
+  color:#fff !important;
+}
+
+/* KYC: Bad */
+#kycComboPanel .status-btn.bad.active,
+#kycComboPanel .status-btn.active-bad,
+#kycComboPanel .status-btn.active[data-filter="bad"],
+#kycComboPanel .status-btn[aria-pressed="true"][data-filter="bad"] {
+  background:#c62828 !important;
+  border-color:#c62828 !important;
+  color:#fff !important;
+}
+
+/* DAR/SURVEY */
+#darConnGroup button.active,
+#surveyConnGroup button.active {
+  background:#174a7e !important;
+  border-color:#174a7e !important;
+  color:#fff !important;
+}
+#darConnGroup button.good.active,
+#surveyConnGroup button.good.active {
+  background:#16723b !important;
+  border-color:#16723b !important;
+  color:#fff !important;
+}
+#darConnGroup button.bad.active,
+#surveyConnGroup button.bad.active {
+  background:#c62828 !important;
+  border-color:#c62828 !important;
+  color:#fff !important;
+}
+</style>
+
+
+<style id="kyc-selected-colors-exact">
+/* KYC uses active-all / active-good / active-bad classes */
+#kycComboPanel .status-btn.active-all {
+  background:#174a7e !important;
+  border-color:#174a7e !important;
+  color:#fff !important;
+}
+#kycComboPanel .status-btn.active-good {
+  background:#16723b !important;
+  border-color:#16723b !important;
+  color:#fff !important;
+}
+#kycComboPanel .status-btn.active-bad {
+  background:#c62828 !important;
+  border-color:#c62828 !important;
+  color:#fff !important;
+}
+
+/* DAR and SURVEY existing selected states */
+#darConnGroup button.active,
+#surveyConnGroup button.active {
+  background:#174a7e !important;
+  border-color:#174a7e !important;
+  color:#fff !important;
+}
+#darConnGroup button.good.active,
+#surveyConnGroup button.good.active {
+  background:#16723b !important;
+  border-color:#16723b !important;
+  color:#fff !important;
+}
+#darConnGroup button.bad.active,
+#surveyConnGroup button.bad.active {
+  background:#c62828 !important;
+  border-color:#c62828 !important;
+  color:#fff !important;
+}
+</style>
+
+
+<style id="kyc-good-bad-text-colors">
+/* Match KYC Good/Bad text colours to DAR and SURVEY */
+#kycComboPanel .status-btn.active-good {
+  color:#16723b !important;
+}
+#kycComboPanel .status-btn.active-bad {
+  color:#c62828 !important;
+}
+
+/* Keep the selected pill background consistent while using the requested text colour */
+#kycComboPanel .status-btn.active-good {
+  background:#fff !important;
+  border-color:#cbd6e1 !important;
+}
+#kycComboPanel .status-btn.active-bad {
+  background:#fff !important;
+  border-color:#cbd6e1 !important;
+}
+</style>
+
+
+<style id="kyc-connectivity-final-colors">
+/* KYC Connectivity: unselected Good/Bad use coloured text;
+   selected Good/Bad use coloured background with white text. */
+#kycComboPanel .status-btn {
+  background:#fff !important;
+  border-color:#cbd6e1 !important;
+}
+
+#kycComboPanel .status-btn.active-all {
+  background:#174a7e !important;
+  border-color:#174a7e !important;
+  color:#fff !important;
+}
+
+#kycComboPanel .status-btn.active-good {
+  background:#16723b !important;
+  border-color:#16723b !important;
+  color:#fff !important;
+}
+
+#kycComboPanel .status-btn.active-bad {
+  background:#c62828 !important;
+  border-color:#c62828 !important;
+  color:#fff !important;
+}
+
+/* Unselected semantic colours */
+#kycComboPanel .status-btn:not(.active-good) {
+  /* All and Bad handled below */
+}
+
+#kycComboPanel #goodBtn {
+  color:#16723b !important;
+}
+#kycComboPanel #badBtn {
+  color:#c62828 !important;
+}
+#kycComboPanel #allBtn {
+  color:#19324d !important;
+}
+
+/* Selected state overrides the unselected text colours */
+#kycComboPanel #allBtn.active-all,
+#kycComboPanel #goodBtn.active-good,
+#kycComboPanel #badBtn.active-bad {
+  color:#fff !important;
+}
+</style>
+
+
+<style id="dashboard-page-layout-themes">
+/* ===== Page-specific themes ===== */
+:root{
+  --kyc-theme:#174a7e;
+  --dar-theme:#7a3e00;
+  --survey-theme:#5b3b8c;
+}
+
+/* KYC - blue */
+#kycComboPanel .section-title,
+#kycComboPanel .card-title,
+#kycComboPanel .panel-title { color:var(--kyc-theme); }
+
+/* DAR - amber/brown */
+#darComboPanel .section-title,
+#darComboPanel .card-title,
+#darComboPanel .panel-title { color:var(--dar-theme); }
+
+/* SURVEY - purple */
+#surveyComboPanel .section-title,
+#surveyComboPanel .card-title,
+#surveyComboPanel .panel-title { color:var(--survey-theme); }
+
+/* ===== DAR: keep the whole dashboard inside the viewport ===== */
+#darComboPanel {
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  overflow-x:hidden !important;
+  box-sizing:border-box !important;
+}
+
+#darComboPanel .table-wrap,
+#darComboPanel .table-container,
+#darComboPanel .data-table-wrap {
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  overflow-x:hidden !important;
+  box-sizing:border-box !important;
+}
+
+#darComboPanel table {
+  width:100% !important;
+  max-width:100% !important;
+  table-layout:fixed !important;
+  box-sizing:border-box !important;
+}
+
+#darComboPanel th,
+#darComboPanel td {
+  min-width:0 !important;
+  max-width:none !important;
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+  word-break:break-word !important;
+}
+
+/* Make the long DAR headers compact enough for viewport fit */
+#darComboPanel th {
+  line-height:1.15 !important;
+  padding:8px 6px !important;
+  font-size:clamp(10px, .85vw, 13px) !important;
+}
+
+#darComboPanel td {
+  padding:7px 6px !important;
+  font-size:clamp(10px, .85vw, 13px) !important;
+}
+
+/* Responsive dashboard */
+@media (max-width:900px){
+  #darComboPanel th,#darComboPanel td{
+    padding:6px 4px !important;
+    font-size:11px !important;
+  }
+}
+
+@media (max-width:600px){
+  #darComboPanel th,#darComboPanel td{
+    padding:5px 3px !important;
+    font-size:9px !important;
+  }
+}
+</style>
+
+
+<style id="sortable-header-hints">
+/* Visual hint only: every data-table header shows that it is sortable.
+   Existing click/sort JavaScript remains completely unchanged. */
+table thead th {
+  position:relative !important;
+  cursor:pointer !important;
+  padding-right:24px !important;
+}
+
+table thead th::after {
+  content:"↕";
+  position:absolute;
+  right:7px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:12px;
+  font-weight:800;
+  opacity:.65;
+  pointer-events:none;
+}
+
+@media (max-width:600px){
+  table thead th {
+    padding-right:17px !important;
+  }
+  table thead th::after {
+    right:4px;
+    font-size:10px;
+  }
+}
+</style>
+
+
+<style id="dashboard-visual-redesign">
+/* =========================================================
+   MzSRLM Dashboard — Visual Redesign Only
+   Existing data, Google Sheet loaders, filters and sorting
+   are intentionally untouched.
+   ========================================================= */
+
+:root{
+  --dash-bg:#f3f6fb;
+  --dash-card:#ffffff;
+  --dash-ink:#19324d;
+  --dash-muted:#6d7c8e;
+  --dash-border:#dce4ee;
+  --kyc-accent:#1769aa;
+  --dar-accent:#d97706;
+  --survey-accent:#7450a8;
+  --good:#168447;
+  --bad:#c62828;
+  --shadow:0 8px 24px rgba(35,58,85,.08);
+  --shadow-hover:0 12px 30px rgba(35,58,85,.13);
+}
+
+html,body{
+  background:var(--dash-bg) !important;
+}
+
+body{
+  font-family:Inter,Segoe UI,Roboto,Arial,sans-serif !important;
+  color:var(--dash-ink) !important;
+}
+
+/* Main shell */
+.container,
+.dashboard-container,
+.wrapper,
+.page-container{
+  max-width:1500px !important;
+}
+
+/* Header / title areas */
+header,
+.dashboard-header,
+.header,
+.topbar{
+  border-radius:18px !important;
+  box-shadow:var(--shadow) !important;
+}
+
+/* Give the three existing tabs a premium card-like appearance */
+#kycTab,#darTab,#surveyTab,
+.tab-btn,
+.tab-button,
+[role="tab"]{
+  border-radius:12px 12px 0 0 !important;
+  font-weight:800 !important;
+  transition:all .18s ease !important;
+}
+
+#kycTab.active,#kycTab.selected,
+.tab-btn[data-tab="kyc"].active{
+  background:linear-gradient(135deg,#1769aa,#2787c9) !important;
+  color:#fff !important;
+}
+
+#darTab.active,#darTab.selected,
+.tab-btn[data-tab="dar"].active{
+  background:linear-gradient(135deg,#c76505,#e89a2e) !important;
+  color:#fff !important;
+}
+
+#surveyTab.active,#surveyTab.selected,
+.tab-btn[data-tab="survey"].active{
+  background:linear-gradient(135deg,#65418f,#8b68bd) !important;
+  color:#fff !important;
+}
+
+/* Common cards */
+.card,
+.kpi-card,
+.summary-card,
+.stat-card,
+.panel,
+.table-card,
+.controls-card{
+  background:var(--dash-card) !important;
+  border:1px solid var(--dash-border) !important;
+  border-radius:16px !important;
+  box-shadow:var(--shadow) !important;
+}
+
+/* KPI values */
+.kpi-card .value,
+.summary-card .value,
+.stat-card .value,
+.kpi-value{
+  font-weight:900 !important;
+  letter-spacing:-.02em !important;
+}
+
+/* Section headings */
+.section-title,
+.card-title,
+.panel-title{
+  font-weight:850 !important;
+  letter-spacing:.01em !important;
+}
+
+/* Connectivity controls — preserve functionality, improve presentation */
+#kycComboPanel .status-btn,
+#darConnGroup button,
+#surveyConnGroup button{
+  border-radius:22px !important;
+  font-weight:800 !important;
+  box-shadow:0 2px 7px rgba(30,55,80,.06) !important;
+  transition:transform .15s ease,box-shadow .15s ease !important;
+}
+
+#kycComboPanel .status-btn:hover,
+#darConnGroup button:hover,
+#surveyConnGroup button:hover{
+  transform:translateY(-1px) !important;
+  box-shadow:0 5px 12px rgba(30,55,80,.10) !important;
+}
+
+/* Tables */
+table{
+  background:#fff !important;
+  border-collapse:separate !important;
+  border-spacing:0 !important;
+  border:1px solid var(--dash-border) !important;
+  border-radius:14px !important;
+  overflow:hidden !important;
+  box-shadow:0 5px 18px rgba(35,58,85,.055) !important;
+}
+
+table thead th{
+  background:#eef3f8 !important;
+  color:#29435e !important;
+  font-weight:850 !important;
+  border-bottom:2px solid #d5dfeb !important;
+}
+
+table tbody tr:nth-child(even){
+  background:#f8fafc !important;
+}
+
+table tbody tr:hover{
+  background:#edf5fc !important;
+}
+
+table td,table th{
+  border-color:#e3e9f0 !important;
+}
+
+/* Make percentage/achievement cells visually prominent without altering values. */
+td[class*="percent"],td[class*="percentage"],
+td[class*="achievement"],.percentage-cell,.achievement-cell{
+  font-weight:850 !important;
+}
+
+/* Live/update badges */
+.live-badge,.updated-badge,.last-updated,.live-time{
+  border-radius:999px !important;
+  font-weight:750 !important;
+}
+
+/* DAR viewport: visual polish while preserving the previous no-horizontal-scroll fix */
+#darComboPanel{
+  border-radius:16px !important;
+}
+
+/* Survey visual identity */
+#surveyComboPanel{
+  border-radius:16px !important;
+}
+
+/* KYC visual identity */
+#kycComboPanel{
+  border-radius:16px !important;
+}
+
+/* Responsive spacing */
+@media (max-width:900px){
+  .card,.kpi-card,.summary-card,.stat-card,.panel,.table-card,.controls-card{
+    border-radius:13px !important;
+  }
+}
+
+@media (max-width:600px){
+  .card,.kpi-card,.summary-card,.stat-card,.panel,.table-card,.controls-card{
+    border-radius:11px !important;
+    box-shadow:0 5px 15px rgba(35,58,85,.07) !important;
+  }
+  table thead th{
+    font-size:10px !important;
+  }
+}
+</style>
+
+
+
+
+
+
+
+
+<style id="percentage-progress-bar-theme">
+/* Percentage cells: keep the cell/background clean; colour only the progress bar. */
+td.range-red,td.range-orange,td.range-yellow,td.range-green,
+td.red-very-low,td.red-low{
+  background:inherit !important;
+  color:inherit !important;
+}
+
+/* Progress bar container */
+.mis-pct-progress{
+  width:100%;
+  min-width:72px;
+  height:10px;
+  background:#e7edf3;
+  border-radius:999px;
+  overflow:hidden;
+  margin-top:5px;
+  box-shadow:inset 0 1px 2px rgba(20,40,60,.10);
+}
+
+/* Progress fill */
+.mis-pct-progress-fill{
+  height:100%;
+  width:0%;
+  border-radius:999px;
+  transition:width .35s ease,background-color .25s ease;
+}
+
+/* 0–<30 red, progressively darker below 15 */
+.mis-pct-progress-fill.range-red{background:#c62828;}
+.mis-pct-progress-fill.red-low{background:#a91515;}
+.mis-pct-progress-fill.red-very-low{background:#8b0000;}
+.mis-pct-progress-fill.range-orange{background:#ef6c00;}
+.mis-pct-progress-fill.range-yellow{background:#f2c400;}
+.mis-pct-progress-fill.range-green{background:#168447;}
+
+.mis-pct-value{
+  display:block;
+  font-weight:850;
+  line-height:1.15;
+}
+</style>
+
+
+
+
+
+<style id="kyc-no-quarter">
+#kycComboPanel .quarter-selector,
+#kycComboPanel .quarter-filter,
+#kycComboPanel [id*="Quarter"],
+#kycComboPanel [id*="quarter"]{display:none!important}
+</style>
+
+
+<style id="final-no-kyc-quarter">
+#kycComboPanel .final-quarter,
+#kycComboPanel .quarter-selector,
+#kycComboPanel .quarter-filter,
+#kycComboPanel [id*="Quarter"],
+#kycComboPanel [id*="quarter"]{display:none!important}
+</style>
+
+<style id="single-quarter-style">
+.single-quarter{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  width:100%;
+  margin:0 0 16px;
+  padding:0;
+}
+.single-quarter .quarter-label{
+  font-weight:800;
+  color:#526579;
+  white-space:nowrap;
+  margin-right:2px;
+}
+.single-quarter button{
+  flex:0 0 auto;
+  min-width:56px;
+  height:34px;
+  padding:0 14px;
+  border:1px solid #d5dde7;
+  border-radius:8px;
+  background:#fff;
+  color:#526579;
+  font:800 13px/32px Arial,Helvetica,sans-serif;
+  cursor:pointer;
+  white-space:nowrap;
+  box-sizing:border-box;
+}
+.single-quarter button:hover{transform:translateY(-1px)}
+#darSingleQuarter button.active{background:#50C878;border-color:#50C878;color:#fff}
+#surveySingleQuarter button.active{background:#50C878;border-color:#50C878;color:#fff}
+@media(max-width:600px){
+  .single-quarter{gap:6px}
+  .single-quarter button{min-width:48px;padding:0 10px}
+}
+</style>
+
+<style id="compact-card-style">
+/* Compact KYC top controls / achievement cards */
+#kycComboPanel .top-cards,
+#kycComboPanel .kpi-row,
+#kycComboPanel .stats-row,
+#kycComboPanel .achievement-row,
+#kycComboPanel .connectivity-row{
+  gap:10px !important;
+  margin-bottom:10px !important;
+}
+
+#kycComboPanel .card,
+#kycComboPanel .kpi-card,
+#kycComboPanel .stat-card,
+#kycComboPanel .achievement-card,
+#kycComboPanel .connectivity-card{
+  min-height:0 !important;
+  padding:10px 12px !important;
+  border-radius:10px !important;
+  box-sizing:border-box !important;
+}
+
+#kycComboPanel .card h3,
+#kycComboPanel .kpi-card h3,
+#kycComboPanel .stat-card h3,
+#kycComboPanel .achievement-card h3,
+#kycComboPanel .connectivity-card h3{
+  margin:0 0 5px !important;
+  font-size:12px !important;
+  line-height:1.2 !important;
+}
+
+#kycComboPanel .card .value,
+#kycComboPanel .kpi-card .value,
+#kycComboPanel .stat-card .value,
+#kycComboPanel .achievement-card .value,
+#kycComboPanel .connectivity-card .value{
+  font-size:20px !important;
+  line-height:1.1 !important;
+}
+
+#kycComboPanel .card p,
+#kycComboPanel .kpi-card p,
+#kycComboPanel .stat-card p,
+#kycComboPanel .achievement-card p,
+#kycComboPanel .connectivity-card p{
+  margin:3px 0 0 !important;
+  font-size:11px !important;
+}
+
+/* Keep connectivity and state achievement compact on the same row where
+   the existing layout permits it. */
+#kycComboPanel .connectivity-section,
+#kycComboPanel .state-achievement,
+#kycComboPanel .state-card{
+  padding:9px 11px !important;
+  margin:0 !important;
+}
+
+@media (max-width: 800px){
+  #kycComboPanel .top-cards,
+  #kycComboPanel .kpi-row,
+  #kycComboPanel .stats-row,
+  #kycComboPanel .achievement-row,
+  #kycComboPanel .connectivity-row{
+    gap:8px !important;
+  }
+}
+</style>
+
+
+<style id="kyc-status-summary-final">
+/* Actual KYC layout:
+   Connectivity controls first, then the S01 heading and compact status
+   metrics on the same row. */
+#kycStatusSummary{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:14px !important;
+  width:100% !important;
+  margin:10px 0 12px !important;
+  padding:10px 12px !important;
+  background:#fff !important;
+  border:1px solid #dce4ee !important;
+  border-radius:12px !important;
+  box-shadow:0 2px 10px rgba(0,0,0,.05) !important;
+}
+#kycStatusSummary .kyc-status-title{
+  flex:1 1 auto !important;
+  min-width:0 !important;
+}
+#kycStatusSummary .kyc-status-title h2{
+  margin:0 !important;
+  color:#174a7e !important;
+  font-size:18px !important;
+  line-height:1.2 !important;
+}
+#kycStatusSummary .kyc-status-title span{
+  display:block !important;
+  margin-top:3px !important;
+  color:#6d7c91 !important;
+  font-size:11px !important;
+}
+#kycStatusSummary .overall{
+  flex:0 0 auto !important;
+  width:auto !important;
+  min-width:420px !important;
+  display:grid !important;
+  grid-template-columns:repeat(4,minmax(82px,1fr)) !important;
+  margin:0 !important;
+  padding:0 !important;
+  border-radius:9px !important;
+  box-shadow:none !important;
+  border:1px solid #dce4ee !important;
+  overflow:hidden !important;
+}
+#kycStatusSummary .overall div{
+  padding:7px 10px !important;
+}
+#kycStatusSummary .overall small{
+  font-size:10px !important;
+  margin-bottom:3px !important;
+}
+#kycStatusSummary .overall strong{
+  font-size:17px !important;
+}
+@media(max-width:900px){
+  #kycStatusSummary{
+    align-items:stretch !important;
+    flex-direction:column !important;
+  }
+  #kycStatusSummary .overall{
+    width:100% !important;
+    min-width:0 !important;
+  }
+}
+@media(max-width:520px){
+  #kycStatusSummary .overall{
+    grid-template-columns:repeat(2,1fr) !important;
+  }
+}
+</style>
+
+<style id="vibrant-theme-integration">
+:root{
+  --v-navy:#071a35;
+  --v-navy2:#0c2d54;
+  --v-pink:#b83b68;
+  --v-blue:#4fa8d8;
+  --v-yellow:#f2bd3d;
+  --v-orange:#ef8a2f;
+  --v-green:#2c9d68;
+  --v-red:#df4b55;
+  --v-ink:#16283d;
+  --v-muted:#66778c;
+  --v-line:#d5dee8;
+  --v-soft-blue:rgba(79,168,216,.12);
+  --v-soft-pink:rgba(184,59,104,.11);
+}
+
+html,body{
+  background:linear-gradient(135deg,#e9f0f6,#f7f9fb)!important;
+  color:var(--v-ink)!important;
+  font-family:Aptos,"Segoe UI",Arial,sans-serif!important;
+}
+
+.dashboard{
+  max-width:1540px!important;
+  padding:12px!important;
+}
+
+/* Main KYC header */
+.header{
+  background:linear-gradient(110deg,var(--v-navy),#0a315d,var(--v-navy2))!important;
+  border-radius:12px!important;
+  padding:16px 20px!important;
+  box-shadow:0 8px 25px rgba(25,45,70,.08)!important;
+  border-bottom:4px solid transparent!important;
+  border-image:linear-gradient(90deg,var(--v-pink),var(--v-blue),var(--v-yellow),var(--v-orange)) 1!important;
+}
+.header h1{
+  font-size:23px!important;
+  font-weight:950!important;
+  letter-spacing:.1px!important;
+}
+.header p{
+  font-size:11px!important;
+  opacity:.82!important;
+}
+#liveDateTime{font-size:11px!important}
+
+/* Top summary card */
+.overall{
+  border-radius:9px!important;
+  min-width:500px!important;
+  box-shadow:none!important;
+  border:1px solid rgba(255,255,255,.18)!important;
+}
+.overall div{padding:9px 12px!important}
+.overall small{font-size:10px!important;color:var(--v-muted)!important}
+.overall strong{font-size:18px!important;color:var(--v-navy)!important}
+
+/* Connectivity / filter area */
+.controls,.extra-controls{
+  margin:10px 0!important;
+  padding:10px 12px!important;
+  border-radius:9px!important;
+  box-shadow:0 3px 12px rgba(25,45,70,.06)!important;
+  border:1px solid var(--v-line)!important;
+}
+.controls label,.extra-controls label{
+  font-size:12px!important;
+  color:var(--v-navy)!important;
+}
+.status-btn,.connectivity-filter button{
+  border-radius:7px!important;
+  padding:7px 12px!important;
+  font-size:11px!important;
+  font-weight:900!important;
+}
+.status-btn.active-all,
+.connectivity-filter button.active{
+  background:var(--v-navy)!important;
+  border-color:var(--v-navy)!important;
+  color:#fff!important;
+}
+#darConnGroup button.good.active,#surveyConnGroup button.good.active,
+.status-btn.active-good{
+  background:var(--v-green)!important;
+  border-color:var(--v-green)!important;
+  color:#fff!important;
+}
+#darConnGroup button.bad.active,#surveyConnGroup button.bad.active,
+.status-btn.active-bad{
+  background:var(--v-red)!important;
+  border-color:var(--v-red)!important;
+  color:#fff!important;
+}
+
+/* KYC status row */
+#kycStatusSummary{
+  border:1px solid var(--v-line)!important;
+  border-radius:9px!important;
+  box-shadow:0 4px 14px rgba(25,45,70,.06)!important;
+  padding:8px 10px!important;
+  margin:8px 0 10px!important;
+}
+#kycStatusSummary .kyc-status-title h2{
+  color:var(--v-navy)!important;
+  font-size:16px!important;
+  font-weight:950!important;
+}
+#kycStatusSummary .kyc-status-title span{
+  color:var(--v-muted)!important;
+  font-size:10px!important;
+}
+#kycStatusSummary .overall{
+  border-color:var(--v-line)!important;
+}
+
+/* Metric cards */
+.cards,.extra-cards{
+  gap:9px!important;
+  margin-bottom:10px!important;
+}
+.metric-card,.extra-card{
+  border-radius:9px!important;
+  padding:11px 12px!important;
+  box-shadow:0 4px 14px rgba(25,45,70,.06)!important;
+  border:1px solid var(--v-line)!important;
+  border-top:3px solid var(--v-blue)!important;
+}
+.metric-card:nth-child(2),.extra-card:nth-child(2){border-top-color:var(--v-pink)!important}
+.metric-card:nth-child(3),.extra-card:nth-child(3){border-top-color:var(--v-yellow)!important}
+.metric-card:nth-child(4),.extra-card:nth-child(4){border-top-color:var(--v-orange)!important}
+.metric-card h3,.extra-card h3{
+  font-size:11px!important;
+  color:var(--v-navy)!important;
+}
+.metric-card .value,.extra-card .value{
+  font-size:21px!important;
+  color:var(--v-navy)!important;
+}
+.metric-card .sub,.extra-card .sub{
+  font-size:10px!important;
+  color:var(--v-muted)!important;
+}
+
+/* Main tabs — same vibrant palette */
+.combo-tabs{
+  gap:6px!important;
+  padding:6px!important;
+  margin-top:12px!important;
+  border-radius:9px 9px 0 0!important;
+  border:1px solid var(--v-line)!important;
+}
+.combo-tab{
+  padding:9px 18px!important;
+  border-radius:7px!important;
+  font-size:11px!important;
+  font-weight:950!important;
+}
+.combo-tabs .combo-tab:nth-child(1){
+  background:var(--v-soft-blue)!important;
+  color:var(--v-navy)!important;
+}
+.combo-tabs .combo-tab:nth-child(1).active{
+  background:var(--v-blue)!important;color:#fff!important;
+}
+.combo-tabs .combo-tab:nth-child(2){
+  background:var(--v-soft-pink)!important;
+  color:var(--v-pink)!important;
+}
+.combo-tabs .combo-tab:nth-child(2).active{
+  background:var(--v-pink)!important;color:#fff!important;
+}
+.combo-tabs .combo-tab:nth-child(3){
+  background:rgba(239,138,47,.12)!important;
+  color:#a85b18!important;
+}
+.combo-tabs .combo-tab:nth-child(3).active{
+  background:var(--v-orange)!important;color:#fff!important;
+}
+
+/* Panels */
+.panel,.extra-panel{
+  border-radius:9px!important;
+  border:1px solid var(--v-line)!important;
+  box-shadow:0 5px 18px rgba(25,45,70,.06)!important;
+}
+.panel-title,.extra-title{
+  padding:10px 13px!important;
+  border-bottom:1px solid var(--v-line)!important;
+}
+.panel-title h2,.extra-title h2{
+  font-size:15px!important;
+  color:var(--v-navy)!important;
+  font-weight:950!important;
+}
+.panel-title span,.extra-title span{
+  color:var(--v-muted)!important;
+  font-size:10px!important;
+}
+
+/* Tables: vibrant navy header with clean rows */
+th,.extra-table th{
+  background:var(--v-navy)!important;
+  color:#fff!important;
+  font-size:11px!important;
+  line-height:1.15!important;
+  border-color:#173b62!important;
+}
+th:hover,.extra-table th:hover{
+  background:#155b98!important;
+}
+td,.extra-table td{
+  font-size:11px!important;
+  padding:8px 10px!important;
+  border-bottom:1px solid #e6edf3!important;
+}
+tr:hover td,.extra-table tr:hover td{
+  background:#f3f8fc!important;
+}
+
+/* Connectivity labels */
+.connectivity,.extra-good,.extra-bad{
+  border-radius:6px!important;
+  padding:4px 7px!important;
+  font-size:10px!important;
+}
+.good,.extra-good{
+  color:#16723b!important;
+  background:rgba(44,157,104,.12)!important;
+}
+.bad,.extra-bad{
+  color:#b52121!important;
+  background:rgba(223,75,85,.12)!important;
+}
+
+/* Progress bars */
+.bar,.extra-bar{
+  background:#e7edf2!important;
+  border-radius:4px!important;
+}
+.bank{background:var(--v-green)!important}
+.ekyc{background:var(--v-blue)!important}
+.mobile{background:var(--v-pink)!important}
+
+/* Preserve the user's percentage thresholds while using the vibrant palette */
+.bar > span.pct-green-low{background:#8bcf9a!important}
+.bar > span.pct-green-mid{background:var(--v-green)!important}
+.bar > span.pct-green-high{background:#167447!important}
+.bar > span.pct-yellow-low{background:#f2d36b!important}
+.bar > span.pct-yellow-mid{background:var(--v-yellow)!important}
+.bar > span.pct-yellow-high{background:#d99f25!important}
+.bar > span.pct-red-low{background:#b72e3d!important}
+.bar > span.pct-red-mid{background:var(--v-red)!important}
+.bar > span.pct-red-high{background:var(--v-orange)!important}
+
+.extra-g1{background:#8bcf9a!important}
+.extra-g2{background:var(--v-green)!important}
+.extra-g3{background:#167447!important}
+.extra-y1{background:#f2d36b!important}
+.extra-y2{background:var(--v-yellow)!important}
+.extra-y3{background:#d99f25!important}
+.extra-r1{background:var(--v-orange)!important}
+.extra-r2{background:var(--v-red)!important}
+.extra-r3{background:#b72e3d!important}
+
+/* Footer */
+.footer{
+  color:var(--v-muted)!important;
+  font-size:10px!important;
+}
+
+/* Mobile/tablet */
+@media(max-width:1100px){
+  .header{flex-direction:column!important;align-items:stretch!important}
+  .overall{min-width:0!important;width:100%!important}
+}
+@media(max-width:650px){
+  .dashboard{padding:7px!important}
+  .header h1{font-size:20px!important}
+  .overall{grid-template-columns:repeat(2,1fr)!important}
+  .combo-tabs{overflow-x:auto!important}
+  .combo-tab{white-space:nowrap!important}
+}
+</style>
+
+
+<style id="light-achievement-cards">
+/* Light background for State DAR Achievement and State SURVEY Achievement */
+.state-achievement-card,
+.dar-achievement-card,
+.survey-achievement-card,
+#darAchievementCard,
+#surveyAchievementCard,
+#darStateAchievement,
+#surveyStateAchievement{
+  background:#f7fafc !important;
+  background-image:none !important;
+  color:#243447 !important;
+  border-color:#dce5ed !important;
+  box-shadow:0 3px 12px rgba(30,55,80,.06) !important;
+}
+</style>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+<style id="report-export-tools">
+.report-tools{
+  display:flex;flex-wrap:wrap;align-items:center;gap:7px;
+  margin:8px 0 10px;
+}
+.report-btn{
+  appearance:none;border:1px solid #cbd7e3;background:#fff;color:#173b60;
+  border-radius:8px;padding:7px 11px;font-size:12px;font-weight:800;
+  cursor:pointer;box-shadow:0 2px 7px rgba(20,45,70,.06);
+  transition:.15s ease;
+}
+.report-btn:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(20,45,70,.10)}
+.report-btn.excel{border-color:#9ccdb1;color:#217346}
+.report-btn.image{border-color:#a9c5df;color:#1d5f8d}
+.report-note{font-size:10px;color:#748397;margin-left:2px}
+@media(max-width:600px){
+  .report-tools{width:100%}
+  .report-btn{flex:1 1 auto}
+  .report-note{width:100%;margin-left:0}
+}
+</style>
+
+<style id="compact-dar-survey-kpi-row">
+/* Keep every DAR/SURVEY KPI card in a single compact row */
+#darPanel .cards,
+#surveyPanel .cards,
+#darComboPanel .cards,
+#surveyComboPanel .cards,
+.extra-panel .cards{
+  display:grid !important;
+  grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  gap:8px !important;
+  width:100% !important;
+  margin:8px 0 10px !important;
+}
+
+#darPanel .metric-card,
+#surveyPanel .metric-card,
+#darComboPanel .metric-card,
+#surveyComboPanel .metric-card,
+.extra-panel .metric-card{
+  min-width:0 !important;
+  min-height:0 !important;
+  height:auto !important;
+  padding:7px 9px !important;
+  border-radius:8px !important;
+  box-sizing:border-box !important;
+}
+
+#darPanel .metric-card h3,
+#surveyPanel .metric-card h3,
+#darComboPanel .metric-card h3,
+#surveyComboPanel .metric-card h3,
+.extra-panel .metric-card h3{
+  margin:0 0 3px !important;
+  font-size:10px !important;
+  line-height:1.15 !important;
+  white-space:normal !important;
+}
+
+#darPanel .metric-card .value,
+#surveyPanel .metric-card .value,
+#darComboPanel .metric-card .value,
+#surveyComboPanel .metric-card .value,
+.extra-panel .metric-card .value{
+  font-size:17px !important;
+  line-height:1.05 !important;
+}
+
+#darPanel .metric-card .sub,
+#surveyPanel .metric-card .sub,
+#darComboPanel .metric-card .sub,
+#surveyComboPanel .metric-card .sub,
+.extra-panel .metric-card .sub{
+  margin-top:2px !important;
+  font-size:9px !important;
+  line-height:1.1 !important;
+}
+
+/* On smaller screens, retain four columns where practical, then gracefully
+   reduce to two rather than causing horizontal scrolling. */
+@media(max-width:900px){
+  #darPanel .cards,#surveyPanel .cards,
+  #darComboPanel .cards,#surveyComboPanel .cards,
+  .extra-panel .cards{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
+@media(max-width:480px){
+  #darPanel .cards,#surveyPanel .cards,
+  #darComboPanel .cards,#surveyComboPanel .cards,
+  .extra-panel .cards{
+    grid-template-columns:1fr !important;
+  }
+}
+</style>
+
+
+<style id="shorter-kpi-cards">
+/* Make DAR/SURVEY KPI cards shorter in width so all four sit comfortably
+   in one row without changing their content or functionality. */
+#darPanel .cards,
+#surveyPanel .cards,
+#darComboPanel .cards,
+#surveyComboPanel .cards,
+.extra-panel .cards{
+  display:flex !important;
+  flex-wrap:nowrap !important;
+  gap:7px !important;
+  width:100% !important;
+  overflow:visible !important;
+}
+
+#darPanel .metric-card,
+#surveyPanel .metric-card,
+#darComboPanel .metric-card,
+#surveyComboPanel .metric-card,
+.extra-panel .metric-card{
+  flex:1 1 0 !important;
+  width:auto !important;
+  min-width:0 !important;
+  max-width:none !important;
+  padding:6px 8px !important;
+}
+
+#darPanel .metric-card h3,
+#surveyPanel .metric-card h3,
+#darComboPanel .metric-card h3,
+#surveyComboPanel .metric-card h3,
+.extra-panel .metric-card h3{
+  font-size:9px !important;
+  line-height:1.1 !important;
+  margin-bottom:2px !important;
+}
+
+#darPanel .metric-card .value,
+#surveyPanel .metric-card .value,
+#darComboPanel .metric-card .value,
+#surveyComboPanel .metric-card .value,
+.extra-panel .metric-card .value{
+  font-size:16px !important;
+}
+
+#darPanel .metric-card .sub,
+#surveyPanel .metric-card .sub,
+#darComboPanel .metric-card .sub,
+#surveyComboPanel .metric-card .sub,
+.extra-panel .metric-card .sub{
+  font-size:8px !important;
+}
+
+@media(max-width:700px){
+  #darPanel .cards,#surveyPanel .cards,
+  #darComboPanel .cards,#surveyComboPanel .cards,
+  .extra-panel .cards{
+    flex-wrap:wrap !important;
+  }
+  #darPanel .metric-card,#surveyPanel .metric-card,
+  #darComboPanel .metric-card,#surveyComboPanel .metric-card,
+  .extra-panel .metric-card{
+    flex:1 1 calc(50% - 7px) !important;
+  }
+}
+@media(max-width:430px){
+  #darPanel .metric-card,#surveyPanel .metric-card,
+  #darComboPanel .metric-card,#surveyComboPanel .metric-card,
+  .extra-panel .metric-card{
+    flex-basis:100% !important;
+  }
+}
+</style>
+
+
+<style id="kyc-12-column-layout">
+#kycComboPanel .table-wrap{overflow:hidden!important;width:100%!important}
+#kycComboPanel table{width:100%!important;min-width:0!important;table-layout:fixed!important}
+#kycComboPanel th,#kycComboPanel td{white-space:normal!important;overflow-wrap:anywhere}
+#kycComboPanel th{font-size:10px!important;line-height:1.15!important;padding:7px 4px!important}
+#kycComboPanel td{font-size:10px!important;line-height:1.15!important;padding:7px 4px!important}
+#kycComboPanel th:nth-child(1),#kycComboPanel td:nth-child(1){width:4%;text-align:center}
+#kycComboPanel th:nth-child(2),#kycComboPanel td:nth-child(2){width:10%}
+#kycComboPanel th:nth-child(3),#kycComboPanel td:nth-child(3){width:9%}
+#kycComboPanel th:nth-child(4),#kycComboPanel td:nth-child(4){width:9%}
+#kycComboPanel th:nth-child(5),#kycComboPanel td:nth-child(5){width:7%}
+#kycComboPanel th:nth-child(6),#kycComboPanel td:nth-child(6){width:7%}
+#kycComboPanel th:nth-child(7),#kycComboPanel td:nth-child(7){width:8%}
+#kycComboPanel th:nth-child(8),#kycComboPanel td:nth-child(8){width:7%}
+#kycComboPanel th:nth-child(9),#kycComboPanel td:nth-child(9){width:8%}
+#kycComboPanel th:nth-child(10),#kycComboPanel td:nth-child(10){width:8%}
+#kycComboPanel th:nth-child(11),#kycComboPanel td:nth-child(11){width:7%}
+#kycComboPanel th:nth-child(12),#kycComboPanel td:nth-child(12){width:7%}
+#kycComboPanel th:nth-child(13),#kycComboPanel td:nth-child(13){width:9%}
+.kyc-action-row{display:inline-flex;align-items:center;gap:7px;margin-left:auto}
+.kyc-icon-btn{appearance:none;border:1px solid #cbd6e1;background:#fff;color:#174a7e;width:34px;height:34px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;line-height:1;cursor:pointer;padding:0;transition:background .15s ease,border-color .15s ease,transform .1s ease}
+.kyc-icon-btn:hover{background:#eef5fb;border-color:#9bb9dc}.kyc-icon-btn:active{transform:scale(.96)}.kyc-icon-btn:disabled{opacity:.55;cursor:wait}
+@media(max-width:900px){#kycComboPanel th,#kycComboPanel td{font-size:9px!important;padding:6px 3px!important}.kyc-action-row{gap:4px}.kyc-icon-btn{width:31px;height:31px;font-size:15px}}
+</style>
+</head>
+<body>
+<div class="dashboard">
+<div class="header">
+  <div><h1>Mizoram SRLM Dashboard</h1><p>• Live data from Google Sheets</p>
+    <div id="liveDateTime" style="margin-top:9px;font-size:13px;font-weight:700;opacity:.95;">Loading date & time…</div>
+  </div>
+
+</div>
+
+<div class="combo-tabs">
+  <button class="combo-tab active" onclick="showComboTab('kyc',this)">KYC</button>
+  <button class="combo-tab" onclick="showComboTab('dar',this)">DAR</button>
+  <button class="combo-tab" onclick="showComboTab('survey',this)">SURVEY</button>
+</div>
+
+<div id="kycComboPanel" class="combo-panel active">
+
+
+<div class="controls">
+  <input id="search" type="text" placeholder="Search district or block..." oninput="render()">
+  <label>Connectivity:</label>
+  <button class="status-btn active-all" id="allBtn" onclick="setStatus('All')">All</button>
+  <button class="status-btn" id="goodBtn" onclick="setStatus('Good')">Good</button>
+  <button class="status-btn" id="badBtn" onclick="setStatus('Bad')">Bad</button>
+
+  <span class="status" id="status">Loading Google Sheet…</span>
+</div>
+
+<div id="kycStatusSummary" class="kyc-status-summary">
+  <div class="kyc-status-title">
+    <h2>S01 - Member KYC Details Dashboard</h2>
+    <span>State-level KYC achievement</span>
+  </div>
+  <div class="overall">
+    <div><small>No. of Members</small><strong id="overallMembers">—</strong></div>
+    <div><small>Bank A/c %</small><strong id="overallBank">—</strong></div>
+    <div><small>e-KYC %</small><strong id="overallEkyc">—</strong></div>
+    <div><small>Mobile Verified %</small><strong id="overallMobile">—</strong></div>
+  </div>
+</div>
+
+
+<div class="cards">
+  <div class="metric-card"><h3>Highest Bank A/c %</h3><div class="value" id="bestBank">—</div><div class="sub" id="bestBankName">—</div></div>
+  <div class="metric-card"><h3>Highest e-KYC %</h3><div class="value" id="bestEkyc">—</div><div class="sub" id="bestEkycName">—</div></div>
+  <div class="metric-card"><h3>Highest Mobile Verified %</h3><div class="value" id="bestMobile">—</div><div class="sub" id="bestMobileName">—</div></div>
+  <div class="metric-card"><h3>Blocks Displayed</h3><div class="value" id="blockCount">—</div><div class="sub">Based on current filter/search</div></div>
+</div>
+
+<div class="panel">
+ <div class="panel-title"><h2>Block-wise KYC Performance</h2><div class="kyc-action-row">
+   <button type="button" class="kyc-icon-btn" id="kycRefreshBtn" onclick="refreshKycData()" title="Refresh KYC data" aria-label="Refresh KYC data">↻</button>
+   <button type="button" class="kyc-icon-btn" onclick="exportReport('kyc')" title="Export all KYC data to Excel" aria-label="Export all KYC data to Excel">▣</button>
+   <button type="button" class="kyc-icon-btn" onclick="savePerformanceImage('kyc')" title="Save KYC performance image" aria-label="Save KYC performance image">▧</button>
+ </div></div>
+ <div class="legend"><span><i class="dot good-dot"></i> Good Internet Connectivity</span><span><i class="dot bad-dot"></i> Bad Internet Connectivity</span></div>
+ <div class="table-wrap">
+  <table>
+   <thead><tr>
+    <th onclick="sortTable('sno')">S.No. <span class="arrow" id="arrow-sno"></span></th>
+    <th onclick="sortTable('connectivity')">Internet Connectivity <span class="arrow" id="arrow-connectivity"></span></th>
+    <th onclick="sortTable('district')">District <span class="arrow" id="arrow-district"></span></th>
+    <th onclick="sortTable('block')">Block <span class="arrow" id="arrow-block"></span></th>
+    <th onclick="sortTable('members')">No. of Members <span class="arrow" id="arrow-members"></span></th>
+    <th onclick="sortTable('bank')">With Bank A/c <span class="arrow" id="arrow-bank"></span></th>
+    <th onclick="sortTable('bankPct')">% With Bank A/c <span class="arrow" id="arrow-bankPct"></span></th>
+    <th onclick="sortTable('aadhaar')">With Aadhaar <span class="arrow" id="arrow-aadhaar"></span></th>
+    <th onclick="sortTable('ekyc')">With e-KYC Aadhaar <span class="arrow" id="arrow-ekyc"></span></th>
+    <th onclick="sortTable('ekycPct')">% e-KYC <span class="arrow" id="arrow-ekycPct"></span></th>
+    <th onclick="sortTable('mobile')">With Mobile No. <span class="arrow" id="arrow-mobile"></span></th>
+    <th onclick="sortTable('mobileVerified')">Mobile Verified <span class="arrow" id="arrow-mobileVerified"></span></th>
+    <th onclick="sortTable('mobilePct')">% Mobile Verified <span class="arrow" id="arrow-mobilePct"></span></th>
+   </tr></thead>
+   <tbody id="tableBody"><tr><td colspan="13" class="loading">Loading data from Google Sheets…</td></tr></tbody>
+  </table>
+ </div>
+</div>
+</div>
+
+
+<div id="darComboPanel" class="combo-panel">
+  <div class="extra-controls">
+  	<div id="darSingleQuarter" class="single-quarter">
+      <input id="darQ" placeholder="Search district or block..." oninput="renderExtra('dar')">
+    <span class="fy-label">FY 2026-27</span><span class="quarter-label">Quarter:</span>
+  <button type="button" data-quarter="ALL" class="active">All</button>
+  <button type="button" data-quarter="Q1">Q1</button>
+  <button type="button" data-quarter="Q2">Q2</button>
+  <button type="button" data-quarter="Q3">Q3</button>
+  <button type="button" data-quarter="Q4">Q4</button>	
+  
+    <label>Connectivity:</label><div class="connectivity-filter" id="darConnGroup">
+      <button class="active" data-value="all" onclick="setConnectivity('dar','all',this)">All</button>
+      <button class="good" data-value="good" onclick="setConnectivity('dar','good',this)">Good</button>
+      <button class="bad" data-value="bad" onclick="setConnectivity('dar','bad',this)">Bad</button>
+    </div>
+
+    <span class="extra-status" id="darStatus">Loading DAR…</span>
+	</div>
+  </div>
+  <div class="kpi-final-row">
+<div class="extra-card"><h3>State DAR Target — All Quarters</h3><div class="value" id="darStateTarget">—</div><div class="sub">Total target</div></div>
+<div class="extra-card"><h3>State PLD Entered — All Quarters</h3><div class="value" id="darStateEntered">—</div><div class="sub">Total PLD entered</div></div>
+<div class="extra-card state-main"><h3>State DAR Achievement — All Quarters</h3><div class="value" id="darStatePct">—</div><div class="sub">Overall achievement</div></div>
+<div class="extra-card"><h3>DAR Highest % Entered PLD — All Quarters</h3><div class="value" id="darBest">—</div><div class="sub" id="darBestName">—</div></div>
+<div class="extra-card"><h3>DAR Lowest % Entered PLD — All Quarters</h3><div class="value" id="darLowest">—</div><div class="sub" id="darLowestName">—</div></div>
+</div>
+<div class="extra-panel">
+    <div class="extra-title"><h2>DAR — % Entered PLD</h2><span id="darMeta">—</span></div>
+    <div class="extra-note indicator-export-row">
+<span><b>Primary indicator:</b> % Entered PLD &nbsp; • &nbsp; <b>≥80% Green</b> • <b>30–79.99% Yellow</b> • <b>&lt;30% Red</b></span>
+<span class="blockwise-export-actions">
+<button type="button" class="section-export-btn excel-btn" onclick="exportReport('dar')" title="Export Excel">▣ Excel Export</button>
+<button type="button" class="section-export-btn image-btn" onclick="savePerformanceImage('dar')" title="Save as Image">▧ Save as Image</button>
+</span></div>
+    <div class="extra-table-wrap"><table class="extra-table"><thead><tr>
+      <th>S.No.</th><th>Connectivity</th><th>District</th><th>Block</th><th>DAR Total Target</th>
+      <th>Active Approved Potential Lakhpati Didi</th><th>PLD Entered</th><th>% Entered PLD</th>
+      <th>PLD Data Approved by BPM</th><th>PLD Data Rejected by BPM</th><th>PLD Data Pending Approval in BPM</th>
+    </tr></thead><tbody id="darBody"><tr><td colspan="11" class="extra-loading">Loading…</td></tr></tbody></table></div>
+  </div>
+</div>
+
+<div id="surveyComboPanel" class="combo-panel">
+  <div class="extra-controls">
+<div id="surveySingleQuarter" class="single-quarter">
+    <input id="surveyQ" placeholder="Search district or block..." oninput="renderExtra('survey')">
+  <span class="fy-label">FY 2026-27</span><span class="quarter-label">Quarter:</span>
+  <button type="button" data-quarter="ALL" class="active">All</button>
+  <button type="button" data-quarter="Q1">Q1</button>
+  <button type="button" data-quarter="Q2">Q2</button>
+  <button type="button" data-quarter="Q3">Q3</button>
+  <button type="button" data-quarter="Q4">Q4</button>
+
+
+
+
+    <label>Connectivity:</label><div class="connectivity-filter" id="surveyConnGroup">
+      <button class="active" data-value="all" onclick="setConnectivity('survey','all',this)">All</button>
+      <button class="good" data-value="good" onclick="setConnectivity('survey','good',this)">Good</button>
+      <button class="bad" data-value="bad" onclick="setConnectivity('survey','bad',this)">Bad</button>
+    </div>
+ 
+    <span class="extra-status" id="surveyStatus">Loading SURVEY…</span>
+  </div>
+     </div>
+  <div class="kpi-final-row">
+<div class="extra-card"><h3>Active Survey Members — All Quarters</h3><div class="value" id="surveyStateMembers">—</div><div class="sub">Total target</div></div>
+<div class="extra-card"><h3>State PLD Entered — All Quarters</h3><div class="value" id="surveyStateEntered">—</div><div class="sub">Total PLD entered</div></div>
+<div class="extra-card state-main"><h3>State SURVEY Achievement — All Quarters</h3><div class="value" id="surveyStatePct">—</div><div class="sub">Overall achievement</div></div>
+<div class="extra-card"><h3>SURVEY Highest % Entered — All Quarters</h3><div class="value" id="surveyBest">—</div><div class="sub" id="surveyBestName">—</div></div>
+<div class="extra-card"><h3>SURVEY Lowest % Entered — All Quarters</h3><div class="value" id="surveyLowest">—</div><div class="sub" id="surveyLowestName">—</div></div>
+</div>
+<div class="extra-panel">
+    <div class="extra-title"><h2>SURVEY — % Active Survey Members Entered</h2><span id="surveyMeta">—</span></div>
+    <div class="extra-note indicator-export-row">
+<span><b>Primary indicator:</b> % Active Survey Members PLD Entered &nbsp; • &nbsp; <b>≥80% Green</b> • <b>30–79.99% Yellow</b> • <b>&lt;30% Red</b></span>
+<span class="blockwise-export-actions">
+<button type="button" class="section-export-btn excel-btn" onclick="exportReport('survey')" title="Export Excel">▣ Excel Export</button>
+<button type="button" class="section-export-btn image-btn" onclick="savePerformanceImage('survey')" title="Save as Image">▧ Save as Image</button>
+</span></div>
+    <div class="extra-table-wrap"><table class="extra-table"><thead><tr>
+      <th>S.No.</th><th>Connectivity</th><th>District</th><th>Block</th><th>Active Survey Members</th>
+      <th>Active Survey Members Entered</th><th>% Active Survey Members Entered</th>
+      <th>Active Survey Members Approved</th><th>Active Survey Members Rejected</th><th>Active Survey Members Pending</th>
+    </tr></thead><tbody id="surveyBody"><tr><td colspan="10" class="extra-loading">Loading…</td></tr></tbody></table></div>
+  </div>
+</div>
+
+<div class="footer">Data updated: <span id="lastRefresh">—</span> &nbsp;|&nbsp; Live time: <span id="footerLiveTime">—</span></div>
+</div>
+
+<script>
+const SHEET_ID="1EPXQVAguNYxEAQGwsEgOnDGh7GMUePsF";
+const SHEET_GID="1870103970";
+
+/*
+ IMPORTANT:
+ The dashboard uses Google's published Visualization endpoint.
+ The tab is selected by GID, so the tab name does not matter.
+ */
+const GVIZ_URL=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${SHEET_GID}`;
+const CSV_URL=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+const PUBLISHED_URL=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?gid=${SHEET_GID}&single=true&output=csv`;
+
+let data=[],statusFilter="All",sortKey="bankPct",sortDir=-1;
+
+/* Last-known fallback data for standalone/offline file:// opening.
+   Live Google Sheets data takes priority whenever the browser permits it. */
+const FALLBACK_DATA = [
+["Good","AIZAWL","AIBAWK",2373,2276,2370,1282,2355,1937],
+["Good","AIZAWL","DARLAWN",2736,2676,2724,1488,2704,1876],
+["Good","AIZAWL","THINGSULTHLIAH",1641,1615,1640,1297,1630,1431],
+["Good","AIZAWL","TLANGNUAM",1928,1872,1928,1066,1926,1519],
+["Good","CHAMPHAI","CHAMPHAI",2727,2575,2706,1136,2661,2371],
+["Good","CHAMPHAI","KHAWBUNG",3103,3054,3081,1391,3083,2248],
+["Good","HNAHTHIAL","HNAHTHIAL",4674,4498,4659,1271,4635,3667],
+["Good","KHAWZAWL","KHAWZAWL",2578,2538,2562,1555,2545,2254],
+["Good","KOLASIB","BILKHAWTHLIR",2784,2755,2780,1816,2769,2566],
+["Good","KOLASIB","THINGDAWL",2428,2267,2414,1317,2369,1951],
+["Bad","LAWNGTLAI","BUNGTLANG S",2213,1853,2197,267,2040,781],
+["Bad","LAWNGTLAI","CHAWNGTE",5887,3421,5839,531,5592,1525],
+["Good","LAWNGTLAI","LAWNGTLAI",2200,1919,2186,829,1862,1140],
+["Bad","LAWNGTLAI","SANGAU",1671,1630,1600,426,1636,981],
+["Bad","LUNGLEI","BUNGHMUN",1377,1334,1372,542,1338,899],
+["Good","LUNGLEI","LUNGLEI",2064,2046,2060,1266,2038,1973],
+["Good","LUNGLEI","LUNGSEN",1574,1117,1562,552,1527,1030],
+["Bad","LUNGLEI","TLABUNG",3455,2942,3422,1123,3002,1751],
+["Bad","MAMIT","KAWRTETHAWVENG",1781,1745,1749,812,1682,1171],
+["Bad","MAMIT","REIEK",2370,2302,2335,1660,2329,1935],
+["Bad","MAMIT","WEST PHAILENG",2362,2235,2319,701,2280,1220],
+["Bad","MAMIT","ZAWLNUAM",2058,1982,1992,941,1993,1354],
+["Bad","SAIHA","SAIHA",2023,1965,1987,341,1974,1196],
+["Bad","SAIHA","TUIPANG",2879,2754,2858,1308,2795,1987],
+["Good","SAITUAL","NGOPA",2359,2316,2342,921,2276,1673],
+["Good","SAITUAL","PHULLEN",2710,2580,2696,949,2604,1769],
+["Good","SERCHHIP","EAST LUNGDAR",1901,1876,1890,1066,1885,1477],
+["Good","SERCHHIP","SERCHHIP",3114,3031,3093,1155,3064,2543]
+];
+function useFallback(){
+  data=FALLBACK_DATA.map(r=>({
+    connectivity:r[0],district:r[1],block:r[2],members:r[3],bank:r[4],
+    aadhaar:r[5],ekyc:r[6],mobile:r[7],mobileVerified:r[8],
+    bankPct:ratio(r[4],r[3]),ekycPct:ratio(r[6],r[5]),mobilePct:ratio(r[8],r[7])
+  }));
+  updateOverall();render();
+  document.getElementById("lastRefresh").textContent="Embedded fallback data";
+}
+
+
+function clean(v){return String(v??"").trim().replace(/\s+/g," ")}
+function norm(v){return clean(v).toLowerCase().replace(/[^a-z0-9]/g,"")}
+function num(v){let n=parseFloat(clean(v).replace(/,/g,"").replace("%",""));return Number.isFinite(n)?n:0}
+function ratio(a,b){return b>0?(a/b)*100:0}
+
+function parseCSV(text){
+  const rows=[];let row=[],cell="",quoted=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i],next=text[i+1];
+    if(ch=='"' && quoted && next=='"'){cell+='"';i++;continue}
+    if(ch=='"'){quoted=!quoted;continue}
+    if(ch=="," && !quoted){row.push(cell);cell="";continue}
+    if((ch=="\n"||ch=="\r")&&!quoted){
+      if(ch=="\r"&&next=="\n")i++;
+      row.push(cell);cell="";
+      if(row.some(x=>clean(x)!==""))rows.push(row);
+      row=[];continue
+    }
+    cell+=ch
+  }
+  if(cell.length||row.length){row.push(cell);if(row.some(x=>clean(x)!==""))rows.push(row)}
+  return rows
+}
+
+function findHeader(rows){
+  for(let i=0;i<Math.min(rows.length,15);i++){
+    const h=rows[i].map(norm);
+    const hasConn=h.some(x=>x==="connectivity"||x.includes("internetconnectivity"));
+    const hasDistrict=h.some(x=>x==="district");
+    const hasBlock=h.some(x=>x==="block");
+    const hasMembers=h.some(x=>x==="members"||x.includes("nomembers"));
+    const hasBank=h.some(x=>x.includes("bankac")||x.includes("bankaccount"));
+    if(hasConn&&hasDistrict&&hasBlock&&hasMembers&&hasBank)return i;
+  }
+  return -1
+}
+function findCol(headers,terms){
+  const h=headers.map(norm);
+  for(const t of terms){let i=h.indexOf(norm(t));if(i>=0)return i}
+  for(const t of terms){const n=norm(t);let i=h.findIndex(x=>x.includes(n));if(i>=0)return i}
+  return -1
+}
+function colMap(headers){
+  /* KYC columns are mapped by their exact Google Sheet positions A:L. */
+  return {
+    connectivity:0,
+    district:1,
+    block:2,
+    members:3,
+    bank:4,
+    bankPct:5,
+    aadhaar:6,
+    ekyc:7,
+    ekycPct:8,
+    mobile:9,
+    mobileVerified:10,
+    mobilePct:11
+  }
+}
+function buildKycDataExact(rows,headers){
+  const c=colMap(headers);
+  const out=[];
+  for(const r of rows){
+    const get=i=>clean(r[i]??"");
+    const connectivity=get(c.connectivity),district=get(c.district),block=get(c.block);
+    const members=num(get(c.members)),bank=num(get(c.bank)),aadhaar=num(get(c.aadhaar));
+    const ekyc=num(get(c.ekyc)),mobile=num(get(c.mobile)),mobileVerified=num(get(c.mobileVerified));
+    if(!district||!block||!members)continue;
+    if(!["good","bad"].includes(connectivity.toLowerCase()))continue;
+    /* Percentages are calculated exactly from the requested Google Sheet columns:
+       F = E*100/D, I = H*100/G, L = K*100/J. */
+    out.push({
+      connectivity,district,block,members,bank,aadhaar,ekyc,mobile,mobileVerified,
+      bankPct:members>0 ? bank*100/members : 0,
+      ekycPct:aadhaar>0 ? ekyc*100/aadhaar : 0,
+      mobilePct:mobile>0 ? mobileVerified*100/mobile : 0
+    });
+  }
+  return out;
+}
+
+function formatDateTime(d){
+  return new Intl.DateTimeFormat("en-IN",{
+    weekday:"short",day:"2-digit",month:"short",year:"numeric",
+    hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true,
+    timeZone:"Asia/Kolkata"
+  }).format(d);
+}
+function updateLiveDateTime(){
+  const now=new Date();
+  const text=formatDateTime(now);
+  const a=document.getElementById("liveDateTime");
+  const b=document.getElementById("footerLiveTime");
+  if(a)a.textContent="Live: "+text+" IST";
+  if(b)b.textContent=text+" IST";
+}
+updateLiveDateTime();
+setInterval(updateLiveDateTime,1000);
+
+
+async function loadSheet(manualRefresh=false){
+  const status=document.getElementById("status");
+  status.className="status";status.textContent=manualRefresh?"Refreshing live KYC data…":"Loading live KYC data…";
+
+  const parseGVIZObject=(json)=>{
+    if(!json||json.status==="error")throw new Error(json?.errors?.[0]?.detailed_message||"Google Sheets query error.");
+    const cols=json.table?.cols||[],rows=json.table?.rows||[];
+    const headers=cols.map(c=>clean(c.label||c.id||""));
+    if(!rows.length)throw new Error("KYC Google Sheet returned no rows.");
+    const arr=buildKycDataExact(rows.map(r=>(r.c||[]).map(x=>x?.f??x?.v??"")),headers);
+    if(!arr.length)throw new Error("No valid KYC block records found.");
+    return arr;
+  };
+
+  try{
+    /* JSONP avoids CORS problems when this HTML is opened directly or
+       downloaded, while the timestamp prevents stale browser/proxy data. */
+    const live=await new Promise((resolve,reject)=>{
+      const cb="kycCB_"+Date.now()+"_"+Math.floor(Math.random()*100000);
+      const s=document.createElement("script");
+      const timer=setTimeout(()=>{cleanup();reject(Error("KYC live request timed out."))},15000);
+      function cleanup(){clearTimeout(timer);delete window[cb];s.remove()}
+      window[cb]=json=>{cleanup();try{resolve(parseGVIZObject(json))}catch(e){reject(e)}};
+      s.onerror=()=>{cleanup();reject(Error("KYC Google Sheet could not be accessed."))};
+      s.src=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:${cb}&gid=${SHEET_GID}&headers=1&tq=${encodeURIComponent("select *")}&_=${Date.now()}`;
+      document.head.appendChild(s);
+    });
+    data=live;
+  }catch(jsonpErr){
+    try{
+      const response=await fetch(GVIZ_URL+"&t="+Date.now(),{cache:"no-store"});
+      const text=await response.text();
+      const match=text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);?\s*$/);
+      if(!match)throw new Error("GVIZ endpoint did not return JSON.");
+      data=parseGVIZObject(JSON.parse(match[1]));
+    }catch(primaryErr){
+      try{
+        const csvResp=await fetch(CSV_URL+"&t="+Date.now(),{cache:"no-store"});
+        if(!csvResp.ok)throw new Error("CSV HTTP "+csvResp.status);
+        const rows=parseCSV(await csvResp.text()),hi=findHeader(rows);
+        if(hi<0)throw new Error("Could not find the KYC header row in the published tab.");
+        data=buildKycDataExact(rows.slice(hi+1),rows[hi]);
+        if(!data.length)throw new Error("KYC header found but no valid block records were found.");
+      }catch(fallbackErr){
+        console.error(jsonpErr,primaryErr,fallbackErr);
+        useFallback();
+        status.className="status";
+        status.textContent="Live KYC data unavailable — using embedded data";
+        return;
+      }
+    }
+  }
+
+  updateOverall();render();
+  document.getElementById("lastRefresh").textContent=formatDateTime(new Date())+" IST";
+  status.className="status ok";
+  status.textContent=data.length+" blocks loaded • live Google Sheet";
+}
+
+function updateOverall(){
+  const members=data.reduce((s,r)=>s+r.members,0);
+  const bank=data.reduce((s,r)=>s+r.bank,0),aad=data.reduce((s,r)=>s+r.aadhaar,0);
+  const ekyc=data.reduce((s,r)=>s+r.ekyc,0),mob=data.reduce((s,r)=>s+r.mobile,0),mv=data.reduce((s,r)=>s+r.mobileVerified,0);
+  document.getElementById("overallMembers").textContent=members.toLocaleString("en-IN");
+  document.getElementById("overallBank").textContent=(members?bank/members*100:0).toFixed(2)+"%";
+  document.getElementById("overallEkyc").textContent=(aad?ekyc/aad*100:0).toFixed(2)+"%";
+  document.getElementById("overallMobile").textContent=(mob?mv/mob*100:0).toFixed(2)+"%";
+}
+function filteredRows(){
+  const q=document.getElementById("search").value.trim().toLowerCase();
+  return data.filter(r=>(statusFilter==="All"||r.connectivity.toLowerCase()===statusFilter.toLowerCase())&&(!q||r.district.toLowerCase().includes(q)||r.block.toLowerCase().includes(q)))
+}
+function sortData(a){return a.sort((x,y)=>{const vx=x[sortKey],vy=y[sortKey];return typeof vx==="string"?vx.localeCompare(vy)*sortDir:(vx-vy)*sortDir})}
+function pctClass(v){
+  if(v>=90) return "pct-green-high";
+  if(v>=80) return "pct-green-mid";
+  if(v>=60) return "pct-green-low";
+  if(v>=50) return "pct-yellow-high";
+  if(v>=30) return "pct-yellow-mid";
+  if(v>=15) return "pct-red-high";
+  if(v>=0) return "pct-red-mid";
+  return "pct-red-low";
+}
+function bar(v){
+  return `<div class="pct">${v.toFixed(2)}%</div><div class="bar"><span class="${pctClass(v)}" style="width:${Math.min(100,Math.max(0,v))}%"></span></div>`;
+}
+function render(){
+  const arr=sortData(filteredRows()),body=document.getElementById("tableBody");
+  if(!arr.length){body.innerHTML='<tr><td colspan="13" class="loading">No matching blocks found.</td></tr>';}
+  else body.innerHTML=arr.map((r,i)=>`<tr class="${r.connectivity.toLowerCase()==="good"?"good-row":"bad-row"}">
+    <td>${i+1}</td>
+    <td><span class="connectivity ${r.connectivity.toLowerCase()==="good"?"good":"bad"}">${r.connectivity}</span></td>
+    <td>${r.district}</td>
+    <td><strong>${r.block}</strong></td>
+    <td>${r.members.toLocaleString("en-IN")}</td>
+    <td>${r.bank.toLocaleString("en-IN")}</td>
+    <td class="bar-cell">${bar(r.bankPct)}</td>
+    <td>${r.aadhaar.toLocaleString("en-IN")}</td>
+    <td>${r.ekyc.toLocaleString("en-IN")}</td>
+    <td class="bar-cell">${bar(r.ekycPct)}</td>
+    <td>${r.mobile.toLocaleString("en-IN")}</td>
+    <td>${r.mobileVerified.toLocaleString("en-IN")}</td>
+    <td class="bar-cell">${bar(r.mobilePct)}</td>
+  </tr>`).join("");
+  document.getElementById("blockCount").textContent=arr.length;updateCards(arr);updateArrows()
+}
+function updateCards(arr){
+  if(!arr.length)return;
+  const b=[...arr].sort((a,c)=>c.bankPct-a.bankPct)[0],e=[...arr].sort((a,c)=>c.ekycPct-a.ekycPct)[0],m=[...arr].sort((a,c)=>c.mobilePct-a.mobilePct)[0];
+  document.getElementById("bestBank").textContent=b.bankPct.toFixed(2)+"%";document.getElementById("bestBankName").textContent=b.block+" ("+b.connectivity+")";
+  document.getElementById("bestEkyc").textContent=e.ekycPct.toFixed(2)+"%";document.getElementById("bestEkycName").textContent=e.block+" ("+e.connectivity+")";
+  document.getElementById("bestMobile").textContent=m.mobilePct.toFixed(2)+"%";document.getElementById("bestMobileName").textContent=m.block+" ("+m.connectivity+")";
+}
+function sortTable(key){if(sortKey===key)sortDir*=-1;else{sortKey=key;sortDir=-1}if(document.getElementById("metric") && ["bankPct","ekycPct","mobilePct","members"].includes(key))document.getElementById("metric").value=key;document.getElementById("directionBtn").textContent=sortDir===-1?"Descending ↓":"Ascending ↑";render()}
+function sortByMetric(){sortKey=document.getElementById("metric").value;sortDir=-1;document.getElementById("directionBtn").textContent="Descending ↓";render()}
+function toggleDirection(){sortDir*=-1;document.getElementById("directionBtn").textContent=sortDir===-1?"Descending ↓":"Ascending ↑";render()}
+function setStatus(s){statusFilter=s;document.getElementById("allBtn").className="status-btn"+(s==="All"?" active-all":"");document.getElementById("goodBtn").className="status-btn"+(s==="Good"?" active-good":"");document.getElementById("badBtn").className="status-btn"+(s==="Bad"?" active-bad":"");render()}
+function updateArrows(){document.querySelectorAll(".arrow").forEach(x=>x.textContent="");const e=document.getElementById("arrow-"+sortKey);if(e)e.textContent=sortDir===-1?"▼":"▲"}
+function resetDashboard(){document.getElementById("search").value="";sortKey="bankPct";sortDir=-1;document.getElementById("metric").value="bankPct";document.getElementById("directionBtn").textContent="Descending ↓";setStatus("All")}
+async function refreshKycData(){
+  const btn=document.getElementById("kycRefreshBtn");
+  if(btn)btn.disabled=true;
+  try{
+    await loadSheet(true);
+  }finally{
+    if(btn)btn.disabled=false;
+  }
+}
+
+loadSheet();
+
+/* DAR + SURVEY additions. KYC JavaScript above is unchanged. */
+const EXTRA_SHEET_ID="1EPXQVAguNYxEAQGwsEgOnDGh7GMUePsF";
+const EXTRA_GIDS={dar:"2108088019",survey:"869667892"};
+const EXTRA_DATA={dar:[],survey:[]};
+const EXTRA_QUARTER={dar:"ALL",survey:"ALL"};
+
+function showComboTab(id,btn){
+  document.querySelectorAll(".combo-panel").forEach(x=>x.classList.remove("active"));
+  document.getElementById(id+"ComboPanel").classList.add("active");
+  document.querySelectorAll(".combo-tab").forEach(x=>x.classList.remove("active"));
+  btn.classList.add("active");
+}
+function extraClean(v){return String(v??"").trim().replace(/\s+/g," ")}
+function extraNorm(v){return extraClean(v).toLowerCase().replace(/[^a-z0-9%]/g,"")}
+function extraNum(v){let n=parseFloat(extraClean(v).replace(/,/g,"").replace("%",""));return Number.isFinite(n)?n:0}
+function extraFind(h,names){
+  const a=h.map(extraNorm);
+  for(const n of names){const i=a.indexOf(extraNorm(n));if(i>=0)return i}
+  return -1;
+}
+function extraParse(obj,type){
+  if(!obj||obj.status==="error")throw Error(obj?.errors?.[0]?.detailed_message||"Google Sheets returned an error");
+  const t=obj.table,h=(t.cols||[]).map(c=>extraClean(c.label||c.id||"")),rows=t.rows||[];
+  const di=extraFind(h,["District"]),bi=extraFind(h,["Block"]),ci=extraFind(h,["Internet Connectivity","Connectivity"]);
+  const qi=extraFind(h,["Quarter"]);
+  if(di<0||bi<0||ci<0)throw Error(type.toUpperCase()+": District, Block or Internet Connectivity column not found.");
+  if(qi<0)throw Error(type.toUpperCase()+": Quarter column not found. Please add a column named Quarter.");
+  if(type==="dar"){
+    const idx={
+      target:extraFind(h,["DAR Total Target"]),
+      active:extraFind(h,["Active Approved Potential Lakhpati Didi"]),
+      entered:extraFind(h,["PLD Entered"]),
+      pct:extraFind(h,["% Entered PLD"]),
+      approved:extraFind(h,["PLD Data Approved by BPM"]),
+      rejected:extraFind(h,["PLD Data Rejected by BPM"]),
+      pending:extraFind(h,["PLD Data Pending Approval in BPM"])
+    };
+    if(Object.values(idx).some(i=>i<0))throw Error("DAR: one or more requested columns were not found.");
+    return rows.map(r=>{
+      const c=(r.c||[]).map(x=>x?.f??x?.v??"");
+      return{
+        quarter:extraClean(c[qi]).toUpperCase(),
+        connectivity:extraClean(c[ci]),district:extraClean(c[di]),block:extraClean(c[bi]),
+        target:extraNum(c[idx.target]),active:extraNum(c[idx.active]),entered:extraNum(c[idx.entered]),
+        pct:extraNum(c[idx.pct]),approved:extraNum(c[idx.approved]),rejected:extraNum(c[idx.rejected]),pending:extraNum(c[idx.pending])
+      };
+    }).filter(x=>x.district&&x.block);
+  }
+  const idx={
+    members:extraFind(h,["Active Survey Members"]),
+    entered:extraFind(h,["Active Survey Members PLD Entered"]),
+    pct:extraFind(h,["% Active Survey Members PLD Entered"]),
+    approved:extraFind(h,["Active Survey Members PLD Approved"]),
+    rejected:extraFind(h,["Active Survey Members PLD Rejected"]),
+    pending:extraFind(h,["Active Survey Members PLD Pending"])
+  };
+  if(Object.values(idx).some(i=>i<0))throw Error("SURVEY: one or more requested columns were not found.");
+  return rows.map(r=>{
+    const c=(r.c||[]).map(x=>x?.f??x?.v??"");
+    return{
+      quarter:extraClean(c[qi]).toUpperCase(),
+      connectivity:extraClean(c[ci]),district:extraClean(c[di]),block:extraClean(c[bi]),
+      members:extraNum(c[idx.members]),entered:extraNum(c[idx.entered]),pct:extraNum(c[idx.pct]),
+      approved:extraNum(c[idx.approved]),rejected:extraNum(c[idx.rejected]),pending:extraNum(c[idx.pending])
+    };
+  }).filter(x=>x.district&&x.block);
+}
+function extraJSONP(type){
+  return new Promise((resolve,reject)=>{
+    const cb="extraCB_"+type+"_"+Date.now()+"_"+Math.floor(Math.random()*100000);
+    const s=document.createElement("script");
+    const timer=setTimeout(()=>{cleanup();reject(Error(type.toUpperCase()+" tab timed out. Check that the tab is published and the GID is correct."))},15000);
+    function cleanup(){clearTimeout(timer);delete window[cb];s.remove()}
+    window[cb]=o=>{cleanup();try{resolve(extraParse(o,type))}catch(e){reject(e)}};
+    s.onerror=()=>{cleanup();reject(Error("Cannot access the published "+type.toUpperCase()+" tab. Check publishing/sharing and GID."))};
+    s.src=`https://docs.google.com/spreadsheets/d/${EXTRA_SHEET_ID}/gviz/tq?tqx=responseHandler:${cb}&gid=${EXTRA_GIDS[type]}&headers=1&tq=${encodeURIComponent("select *")}&_=${Date.now()}`;
+    document.head.appendChild(s);
+  });
+}
+function extraPctClass(v){
+  if(v>=80)return"extra-g2";
+  if(v>=60)return"extra-g1";
+  if(v>=30)return"extra-y2";
+  if(v>=15)return"extra-r1";
+  return"extra-r3";
+}
+function extraPct(v){
+  return`<div><b>${v.toFixed(2)}%</b></div><div class="extra-bar"><span class="${extraPctClass(v)}" style="width:${Math.min(100,Math.max(0,v))}%"></span></div>`;
+}
+function extraAvg(a,k){return a.length?a.reduce((s,x)=>s+x[k],0)/a.length:0}
+
+function extraFiltered(type){
+  let a=[...EXTRA_DATA[type]];
+  const q=document.getElementById(type+"Q")?.value.toLowerCase().trim()||"";
+  const conn=document.getElementById(type+"Conn")?.value||"all";
+  const quarter=EXTRA_QUARTER[type];
+
+  return a.filter(x=>{
+    const mq=!q||x.district.toLowerCase().includes(q)||x.block.toLowerCase().includes(q);
+    const mc=conn==="all"||x.connectivity.toLowerCase()===conn;
+    const mqtr=quarter==="ALL"||normQuarter(x.quarter)===quarter;
+    return mq&&mc&&mqtr;
+  });
+}
+function normQuarter(v){
+  return String(v??"").trim().toUpperCase().replace(/\s+/g,"");
+}
+
+function renderExtra(type){
+  let a=extraFiltered(type);
+  const s="desc";
+
+  a.sort((x,y)=>{
+    if(s==="desc")return y.pct-x.pct;
+    if(s==="asc")return x.pct-y.pct;
+    if(s==="district")return x.district.localeCompare(y.district)||x.block.localeCompare(y.block);
+    if(s==="block")return x.block.localeCompare(y.block)||x.district.localeCompare(y.district);
+    return 0;
+  });
+
+  const b=document.getElementById(type+"Body");
+  if(type==="dar"){
+    b.innerHTML=a.length?a.map((x,i)=>`<tr><td>${i+1}</td><td>${x.connectivity.toLowerCase()==="good"?'<span class="extra-good">GOOD</span>':'<span class="extra-bad">BAD</span>'}</td><td>${x.district}</td><td><b>${x.block}</b></td><td>${x.target.toLocaleString("en-IN")}</td><td>${x.active.toLocaleString("en-IN")}</td><td>${x.entered.toLocaleString("en-IN")}</td><td class="extra-pct-cell">${extraPct(x.pct)}</td><td>${x.approved.toLocaleString("en-IN")}</td><td>${x.rejected.toLocaleString("en-IN")}</td><td>${x.pending.toLocaleString("en-IN")}</td></tr>`).join(""):'<tr><td colspan="11" class="extra-loading">No matching records.</td></tr>';
+  }else{
+    b.innerHTML=a.length?a.map((x,i)=>`<tr><td>${i+1}</td><td>${x.connectivity.toLowerCase()==="good"?'<span class="extra-good">GOOD</span>':'<span class="extra-bad">BAD</span>'}</td><td>${x.district}</td><td><b>${x.block}</b></td><td>${x.members.toLocaleString("en-IN")}</td><td>${x.entered.toLocaleString("en-IN")}</td><td class="extra-pct-cell">${extraPct(x.pct)}</td><td>${x.approved.toLocaleString("en-IN")}</td><td>${x.rejected.toLocaleString("en-IN")}</td><td>${x.pending.toLocaleString("en-IN")}</td></tr>`).join(""):'<tr><td colspan="10" class="extra-loading">No matching records.</td></tr>';
+  }
+
+  const label=EXTRA_QUARTER[type]==="ALL"?"All Quarters":EXTRA_QUARTER[type];
+  document.getElementById(type+"Meta").textContent=a.length+" records • "+label;
+
+  /* State/KPI cards use the selected quarter/connectivity data. */
+  const cap=label;
+  if(type==="dar"){
+    const target=a.reduce((s,x)=>s+x.target,0), entered=a.reduce((s,x)=>s+x.entered,0);
+    const ranked=a.slice().sort((x,y)=>y.pct-x.pct);
+    const best=ranked[0], lowest=ranked.length?ranked[ranked.length-1]:null;
+    const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+    const cardTitle=(id,text)=>{const el=document.getElementById(id);if(el&&el.closest(".extra-card")){const h=el.closest(".extra-card").querySelector("h3");if(h)h.textContent=text;}};
+    cardTitle("darStateTarget","State DAR Target — "+cap);
+    cardTitle("darStateEntered","State PLD Entered — "+cap);
+    cardTitle("darStatePct","State DAR Achievement — "+cap);
+    cardTitle("darBest","DAR Highest % Entered PLD — "+cap);
+    const ttl=document.querySelector("#darComboPanel .extra-title h2"); if(ttl)ttl.textContent="DAR — % Entered PLD — "+cap;
+    set("darStateTarget",target.toLocaleString("en-IN"));
+    set("darStateEntered",entered.toLocaleString("en-IN"));
+    set("darStatePct",(target?entered/target*100:0).toFixed(2)+"%");
+    set("darBest",best?best.pct.toFixed(2)+"%":"—");
+    set("darBestName",best?best.district+" / "+best.block:"—");
+    set("darLowest",lowest?lowest.pct.toFixed(2)+"%":"—");
+    set("darLowestName",lowest?lowest.district+" / "+lowest.block:"—");
+  }else{
+    const members=a.reduce((s,x)=>s+x.members,0), entered=a.reduce((s,x)=>s+x.entered,0);
+    const ranked=a.slice().sort((x,y)=>y.pct-x.pct);
+    const best=ranked[0], lowest=ranked.length?ranked[ranked.length-1]:null;
+    const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+    const cardTitle=(id,text)=>{const el=document.getElementById(id);if(el&&el.closest(".extra-card")){const h=el.closest(".extra-card").querySelector("h3");if(h)h.textContent=text;}};
+    cardTitle("surveyStateMembers","Active Survey Members — "+cap);
+    cardTitle("surveyStateEntered","State PLD Entered — "+cap);
+    cardTitle("surveyStatePct","State SURVEY Achievement — "+cap);
+    cardTitle("surveyBest","SURVEY Highest % Entered — "+cap);
+    const ttl=document.querySelector("#surveyComboPanel .extra-title h2"); if(ttl)ttl.textContent="SURVEY — % Active Survey Members Entered — "+cap;
+    set("surveyStateMembers",members.toLocaleString("en-IN"));
+    set("surveyStateEntered",entered.toLocaleString("en-IN"));
+    set("surveyStatePct",(members?entered/members*100:0).toFixed(2)+"%");
+    set("surveyBest",best?best.pct.toFixed(2)+"%":"—");
+    set("surveyBestName",best?best.district+" / "+best.block:"—");
+    set("surveyLowest",lowest?lowest.pct.toFixed(2)+"%":"—");
+    set("surveyLowestName",lowest?lowest.district+" / "+lowest.block:"—");
+  }
+
+  /* Reapply the selected quarter button state. */
+  document.querySelectorAll("#"+type+"SingleQuarter button[data-quarter]").forEach(btn=>{
+    btn.classList.toggle("active",btn.dataset.quarter===EXTRA_QUARTER[type]);
+  });
+}
+
+function setQuarter(type,value){
+  EXTRA_QUARTER[type]=String(value||"ALL").toUpperCase();
+  renderExtra(type);
+}
+function setConnectivity(type,value,btn){
+  const hidden=document.getElementById(type+"Conn");
+  if(hidden) hidden.value=value;
+  else{
+    const h=document.createElement("input");h.type="hidden";h.id=type+"Conn";h.value=value;
+    document.body.appendChild(h);
+  }
+  document.querySelectorAll("#"+type+"ConnGroup button").forEach(x=>x.classList.remove("active"));
+  btn.classList.add("active");
+  renderExtra(type);
+}
+function resetExtra(type){
+  document.getElementById(type+"Q").value="";
+  const sortEl=document.getElementById(type+"Sort"); if(sortEl)sortEl.value="desc";
+  setQuarter(type,"ALL");
+  setConnectivity(type,"all",document.querySelector("#"+type+"ConnGroup button[data-value='all']"));
+}
+async function loadExtra(){
+  for(const type of ["dar","survey"]){
+    const st=document.getElementById(type+"Status");
+    try{
+      EXTRA_DATA[type]=await extraJSONP(type);
+      st.className="extra-status ok";
+      st.textContent=EXTRA_DATA[type].length+" records loaded • live Google Sheet";
+      renderExtra(type);
+    }catch(e){
+      st.className="extra-status error";st.textContent=e.message;console.error(type,e);
+    }
+  }
+}
+function bindQuarterButtons(){
+  [["dar","darQuarterFilter"],["survey","surveyQuarterFilter"]].forEach(([type,id])=>{
+    const box=document.getElementById(id);
+    if(!box||box.dataset.bound==="1")return;
+    box.dataset.bound="1";
+    box.addEventListener("click",e=>{
+      const b=e.target.closest("button[data-quarter]");
+      if(b)setQuarter(type,b.dataset.quarter);
+    });
+  });
+}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bindQuarterButtons);
+else bindQuarterButtons();
+loadExtra();
+
+</script>
+<div class="footer">KYC source GID: null | DAR source GID: 2108088019 | SURVEY source GID: 869667892</div>
+
+<script>
+/* === Upgrade: sort every dashboard table column === */
+(function () {
+  const sortState = new WeakMap();
+
+  function parseCell(cell) {
+    const raw = (cell?.textContent || "").trim();
+    const normalized = raw.replace(/,/g, "").replace(/%/g, "");
+    const n = Number(normalized);
+    return {
+      raw: raw.toLowerCase(),
+      num: Number.isFinite(n) ? n : null
+    };
+  }
+
+  document.addEventListener("click", function (event) {
+    const th = event.target.closest("table thead th");
+    if (!th) return;
+
+    const table = th.closest("table");
+    if (!table || !table.tBodies.length) return;
+
+    const tbody = table.tBodies[0];
+    const rows = Array.from(tbody.rows);
+    if (rows.length < 2) return;
+
+    const column = Array.from(th.parentElement.children).indexOf(th);
+    if (column < 0) return;
+
+    const direction = sortState.get(th) === "asc" ? "desc" : "asc";
+    sortState.set(th, direction);
+
+    table.querySelectorAll("thead th").forEach(function (other) {
+      if (other !== th) sortState.delete(other);
+    });
+
+    rows.sort(function (a, b) {
+      const A = parseCell(a.cells[column]);
+      const B = parseCell(b.cells[column]);
+
+      let result;
+      if (A.num !== null && B.num !== null) {
+        result = A.num - B.num;
+      } else {
+        result = A.raw.localeCompare(B.raw, undefined, {
+          numeric: true,
+          sensitivity: "base"
+        });
+      }
+
+      return direction === "asc" ? result : -result;
+    });
+
+    rows.forEach(function (row) {
+      tbody.appendChild(row);
+    });
+
+    // Re-number S.No. dynamically after sorting.
+    Array.from(tbody.rows).forEach(function (row, index) {
+      if (row.cells.length && row.cells[0]) {
+        row.cells[0].textContent = String(index + 1);
+      }
+    });
+  });
+})();
+</script>
+
+
+
+
+
+
+
+
+<script id="percentage-progress-renderer">
+(function(){
+  function getPct(text){
+    var m=String(text||'').replace(/,/g,'').match(/(-?\d+(?:\.\d+)?)\s*%/);
+    return m ? Math.max(0,Math.min(100,parseFloat(m[1]))) : null;
+  }
+
+  function classify(v){
+    if(v < 15) return ['range-red','red-very-low'];
+    if(v < 30) return ['range-red','red-low'];
+    if(v < 60) return ['range-orange'];
+    if(v < 80) return ['range-yellow'];
+    return ['range-green'];
+  }
+
+  function render(){
+    document.querySelectorAll('td').forEach(function(td){
+      if(td.dataset.pctBarProcessed==='1') return;
+      var pct=getPct(td.textContent);
+      if(pct===null) return;
+
+      /* Only enhance cells that contain a percentage. */
+      var original=td.textContent.trim();
+      var classes=classify(pct);
+
+      td.innerHTML =
+        '<span class="mis-pct-value">'+original+'</span>'+
+        '<div class="mis-pct-progress" aria-label="'+original+'">'+
+          '<div class="mis-pct-progress-fill '+classes.join(' ')+'" style="width:'+pct+'%"></div>'+
+        '</div>';
+
+      td.dataset.pctBarProcessed='1';
+    });
+  }
+
+  function start(){
+    render();
+    if(!document.body) return;
+
+    var observer=new MutationObserver(function(){
+      document.querySelectorAll('td[data-pct-bar-refresh]').forEach(function(td){
+        td.removeAttribute('data-pct-bar-refresh');
+        td.removeAttribute('data-pct-bar-processed');
+      });
+      setTimeout(render,40);
+    });
+
+    observer.observe(document.body,{childList:true,subtree:true,characterData:true});
+
+    /* Sorting/filtering often replaces rows. Re-run periodically but only
+       enhance newly-created percentage cells. */
+    setInterval(render,700);
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',start);
+  }else{
+    start();
+  }
+})();
+</script>
+
+
+
+
+<script id="single-quarter-filter">
+(function(){
+  const selected={dar:"ALL",survey:"ALL"};
+  const norm=v=>String(v??"").trim().toUpperCase().replace(/\s+/g,"");
+
+  function apply(type){
+    const box=document.getElementById(type+"SingleQuarter");
+    const panel=document.getElementById(type+"ComboPanel");
+    if(!box||!panel)return;
+    const wanted=selected[type];
+
+    panel.querySelectorAll("table").forEach(table=>{
+      const headers=[...table.querySelectorAll("thead th")];
+      const qi=headers.findIndex(h=>norm(h.textContent)==="QUARTER");
+      if(qi<0)return;
+      table.querySelectorAll("tbody tr").forEach(row=>{
+        const cells=row.querySelectorAll("td");
+        const q=cells[qi]?norm(cells[qi].textContent):"";
+        row.style.display=(wanted==="ALL"||q===wanted)?"":"none";
+      });
+    });
+
+    box.querySelectorAll("button[data-quarter]").forEach(btn=>{
+      btn.classList.toggle("active",norm(btn.dataset.quarter)===wanted);
+    });
+  }
+
+  function bind(type){
+    const box=document.getElementById(type+"SingleQuarter");
+    if(!box||box.dataset.bound==="1")return;
+    box.dataset.bound="1";
+    box.addEventListener("click",e=>{
+      const btn=e.target.closest("button[data-quarter]");
+      if(!btn)return;
+      selected[type]=norm(btn.dataset.quarter);
+      EXTRA_QUARTER[type]=selected[type];
+      renderExtra(type);
+      apply(type);
+    });
+    apply(type);
+  }
+
+  function init(){bind("dar");bind("survey")}
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);
+  else init();
+
+  /* Reapply after live Google Sheet rendering without creating new controls. */
+  setInterval(()=>{apply("dar");apply("survey")},1000);
+})();
+</script>
+
+
+<script id="light-achievement-card-targeting">
+(function(){
+  function lightenAchievementCards(){
+    const cards=[...document.querySelectorAll('div,section,article')];
+    cards.forEach(card=>{
+      const t=(card.textContent||'').trim().replace(/\s+/g,' ');
+      if(t.includes('State DAR Achievement') || t.includes('State SURVEY Achievement')){
+        card.style.background='#f7fafc';
+        card.style.backgroundImage='none';
+        card.style.color='#243447';
+        card.style.borderColor='#dce5ed';
+        card.style.boxShadow='0 3px 12px rgba(30,55,80,.06)';
+      }
+    });
+  }
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(lightenAchievementCards,200));
+})();
+</script>
+
+
+<script id="report-export-functions">
+(function(){
+  function esc(v){
+    return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+  function downloadBlob(blob,name){
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);a.download=name;
+    document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+  }
+  function stamp(){
+    const d=new Date();
+    return d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")
+      +String(d.getDate()).padStart(2,"0")+"_"+String(d.getHours()).padStart(2,"0")
+      +String(d.getMinutes()).padStart(2,"0");
+  }
+
+  window.exportReport=function(type){
+    try{
+      let rows=[],sheetName="",fileName="";
+      if(type==="kyc"){
+        const a=[...data];
+        rows=a.map((x,i)=>({
+          "S.No.":i+1,"Internet Connectivity":x.connectivity,"District":x.district,"Block":x.block,
+          "No. of Members":x.members,"With Bank A/c":x.bank,"% With Bank A/c":+x.bankPct.toFixed(2),
+          "With Aadhaar":x.aadhaar,"With e-KYC Aadhaar":x.ekyc,"% e-KYC":+x.ekycPct.toFixed(2),
+          "With Mobile No.":x.mobile,"Mobile Verified":x.mobileVerified,"% Mobile Verified":+x.mobilePct.toFixed(2)
+        }));
+        sheetName="KYC Report";fileName="MzSRLM_KYC_Report_"+stamp()+".xlsx";
+      }else{
+        const a=typeof extraFiltered==="function"?extraFiltered(type):[];
+        const sort=document.getElementById(type+"Sort")?.value||"desc";
+        a.sort((x,y)=>{
+          if(sort==="desc")return y.pct-x.pct;
+          if(sort==="asc")return x.pct-y.pct;
+          if(sort==="district")return x.district.localeCompare(y.district)||x.block.localeCompare(y.block);
+          return x.block.localeCompare(y.block)||x.district.localeCompare(y.district);
+        });
+        if(type==="dar"){
+          rows=a.map((x,i)=>({
+            "S.No.":i+1,"Connectivity":x.connectivity,"District":x.district,"Block":x.block,
+            "DAR Total Target":x.target,"Active Approved Potential Lakhpati Didi":x.active,
+            "PLD Entered":x.entered,"% Entered PLD":+x.pct.toFixed(2),
+            "PLD Data Approved by BPM":x.approved,"PLD Data Rejected by BPM":x.rejected,
+            "PLD Data Pending Approval in BPM":x.pending
+          }));
+          sheetName="DAR Report";fileName="MzSRLM_DAR_Report_"+stamp()+".xlsx";
+        }else{
+          rows=a.map((x,i)=>({
+            "S.No.":i+1,"Connectivity":x.connectivity,"District":x.district,"Block":x.block,
+            "Active Survey Members":x.members,"Active Survey Members PLD Entered":x.entered,
+            "% Active Survey Members PLD Entered":+x.pct.toFixed(2),
+            "Active Survey Members PLD Approved":x.approved,
+            "Active Survey Members PLD Rejected":x.rejected,
+            "Active Survey Members PLD Pending":x.pending
+          }));
+          sheetName="SURVEY Report";fileName="MzSRLM_SURVEY_Report_"+stamp()+".xlsx";
+        }
+      }
+      if(!rows.length){alert("There is no data to export for the current selection.");return;}
+      if(typeof XLSX==="undefined"){alert("Excel export library could not be loaded. Please check your internet connection and try again.");return;}
+      const wb=XLSX.utils.book_new();
+      const ws=XLSX.utils.json_to_sheet(rows);
+      ws["!cols"]=Object.keys(rows[0]).map(k=>({wch:Math.min(42,Math.max(12,k.length+3))}));
+      XLSX.utils.book_append_sheet(wb,ws,sheetName);
+      XLSX.writeFile(wb,fileName);
+    }catch(e){
+      console.error(e);alert("Could not generate the Excel report: "+e.message);
+    }
+  }
+
+function exportReport(type){
+  if(type!=="dar" && type!=="survey") return _exportReportExisting(type);
+  if(typeof XLSX==="undefined"){alert("Excel export library is not available.");return;}
+  const rows=typeof extraFiltered==="function"?extraFiltered(type):[];
+  if(!rows.length){alert("There is no data to export for the current selection.");return;}
+  const q=EXTRA_QUARTER[type]||"ALL";
+  const qLabel=q==="ALL"?"All Quarters":q;
+  let headers, body;
+  if(type==="dar"){
+    headers=["S.No.","Internet Connectivity","District","Block","DAR Total Target","Active Approved Potential Lakhpati Didi","PLD Entered","% Entered PLD","PLD Data Approved by BPM","PLD Data Rejected by BPM","PLD Data Pending Approval in BPM","Quarter"];
+    body=rows.map((x,i)=>[i+1,x.connectivity||"",x.district||"",x.block||"",Number(x.target||0),Number(x.potential||0),Number(x.entered||0),Number(x.pct||0),Number(x.approved||0),Number(x.rejected||0),Number(x.pending||0),qLabel]);
+  }else{
+    headers=["S.No.","Internet Connectivity","District","Block","Active Survey Members","Active Survey Members PLD Entered","% Active Survey Members PLD Entered","Active Survey Members PLD Approved","Active Survey Members PLD Rejected","Active Survey Members PLD Pending","Quarter"];
+    body=rows.map((x,i)=>[i+1,x.connectivity||"",x.district||"",x.block||"",Number(x.members||0),Number(x.entered||0),Number(x.pct||0),Number(x.approved||0),Number(x.rejected||0),Number(x.pending||0),qLabel]);
+  }
+  const title=type==="dar"?"S01 - DAR Details":"S01 - SURVEY Details";
+  const ws=XLSX.utils.aoa_to_sheet([[title],[...headers],...body]);
+  ws["!merges"]=[{s:{r:0,c:0},e:{r:0,c:headers.length-1}}];
+  const wb=XLSX.utils.book_new(); let sheetName=(type==="dar"?"DAR":"SURVEY")+" - "+qLabel;
+  sheetName=sheetName.replace(/[\\/*?:\[\]]/g," ").slice(0,31);
+  XLSX.utils.book_append_sheet(wb,ws,sheetName);
+  XLSX.writeFile(wb,"MzSRLM_"+type.toUpperCase()+"_"+qLabel.replace(/\s+/g,"_")+".xlsx");
+};
+
+  function performanceRows(type){
+    if(type==="kyc"){
+      const a=typeof filteredRows==="function"?filteredRows():[...data];
+      return a.map(x=>({district:x.district,block:x.block,value:x.ekycPct,connectivity:x.connectivity}));
+    }
+    const a=typeof extraFiltered==="function"?extraFiltered(type):[];
+    const quarter=EXTRA_QUARTER[type]||"ALL";
+    return a.map(x=>({
+      district:x.district,block:x.block,
+      target:type==="dar"?Number(x.target||0):Number(x.members||0),
+      entry:Number(x.entered||0),value:Number(x.pct||0),
+      connectivity:x.connectivity,quarter:quarter
+    }));
+  }
+
+  function barColor(v){
+    if(v>=80)return "#2c9d68";
+    if(v>=60)return "#e5c23b";
+    if(v>=30)return "#ef8a2f";
+    return "#df4b55";
+  }
+
+  window.savePerformanceImage=function(type){
+    const rows=performanceRows(type);
+    if(!rows.length){alert("There is no blockwise data to save for the current selection.");return;}
+    if(type==="kyc"){ return; }
+
+    const q=EXTRA_QUARTER[type]||"ALL";
+    const qLabel=q==="ALL"?"All Quarters":q;
+    const title=type==="dar" ? "DAR — % Entered PLD — "+qLabel : "SURVEY — % Active Survey Members PLD Entered — "+qLabel;
+    const subtitle="FY 2026-27 • Quarter: "+qLabel;
+    const r=rows.slice().sort((a,b)=>b.value-a.value).slice(0,40);
+
+    const W=1500,rowH=42,top=160,bottom=42,H=top+r.length*rowH+bottom;
+    const c=document.createElement("canvas"); c.width=W;c.height=H;
+    const ctx=c.getContext("2d");
+    ctx.fillStyle="#f7fafc";ctx.fillRect(0,0,W,H);
+
+    // Title area.
+    ctx.fillStyle="#071a35";ctx.fillRect(0,0,W,105);
+    ctx.fillStyle="#fff";ctx.font="bold 25px Arial";ctx.fillText(title,28,34);
+    ctx.font="15px Arial";ctx.fillStyle="#d9e7f4";ctx.fillText(subtitle,28,62);
+    ctx.font="13px Arial";ctx.fillText("Quarter exported: "+qLabel,28,86);
+
+    // Explicit table header band.
+    ctx.fillStyle="#dce6ef";ctx.fillRect(18,116,W-36,36);
+    ctx.fillStyle="#243447";ctx.font="bold 13px Arial";
+    const xDistrict=30,xBlock=280,xTarget=540,xEntry=705,xBar=855,bw=500;
+    ctx.fillText("District",xDistrict,139);
+    ctx.fillText("Block",xBlock,139);
+    ctx.fillText("Target",xTarget,139);
+    ctx.fillText("Entry",xEntry,139);
+    ctx.fillText("Achievement Progress",xBar,139);
+    ctx.fillText("%",xBar+bw+15,139);
+
+    r.forEach((x,i)=>{
+      const y=top+i*rowH;
+      if(i%2===0){ctx.fillStyle="#edf3f7";ctx.fillRect(18,y-25,W-36,rowH);}
+      ctx.fillStyle="#243447";ctx.font="bold 12px Arial";ctx.fillText(String(x.district||""),xDistrict,y);
+      ctx.font="12px Arial";ctx.fillText(String(x.block||""),xBlock,y);
+      ctx.fillText(Number(x.target||0).toLocaleString("en-IN"),xTarget,y);
+      ctx.fillText(Number(x.entry||0).toLocaleString("en-IN"),xEntry,y);
+      const pct=Math.max(0,Math.min(100,Number(x.value)||0));
+      ctx.fillStyle="#dfe7ee";ctx.fillRect(xBar,y-12,bw,16);
+      ctx.fillStyle=barColor(pct);ctx.fillRect(xBar,y-12,bw*pct/100,16);
+      ctx.fillStyle="#243447";ctx.font="bold 12px Arial";ctx.fillText(pct.toFixed(2)+"%",xBar+bw+15,y);
+    });
+    ctx.fillStyle="#738398";ctx.font="10px Arial";
+    ctx.fillText("Generated from the dashboard's current data/filter selection • "+new Date().toLocaleString(),28,H-15);
+    c.toBlob(blob=>{if(blob)downloadBlob(blob,"MzSRLM_"+type.toUpperCase()+"_Blockwise_"+qLabel.replace(/\s+/g,"_")+"_"+stamp()+".png");},"image/png");
+  };
+})();
+</script>
+</body>
+</html>
+<style>
+/* DAR/SURVEY final KPI layout */
+#darComboPanel .kpi-final-row,
+#surveyComboPanel .kpi-final-row{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;
+  margin:14px 0 18px;
+}
+#darComboPanel .kpi-final-row .extra-card,
+#surveyComboPanel .kpi-final-row .extra-card{width:auto;min-width:0;margin:0}
+.fy-label{
+  display:inline-flex;align-items:center;font-weight:800;color:#071a35;
+  margin-left:10px;padding:7px 12px;border:1px solid #d5dee8;
+  border-radius:10px;background:#fff;
+}
+@media(max-width:900px){
+  #darComboPanel .kpi-final-row,#surveyComboPanel .kpi-final-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:560px){
+  #darComboPanel .kpi-final-row,#surveyComboPanel .kpi-final-row{grid-template-columns:1fr}
+}
+</style>
+
+<style>
+/* Export controls in the DAR/SURVEY table-title row */
+#darComboPanel .extra-title,
+#surveyComboPanel .extra-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.section-export-actions{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-shrink:0;
+}
+.section-export-btn{
+  border:1px solid #d5dee8;
+  border-radius:8px;
+  background:#fff;
+  padding:7px 11px;
+  font:700 12px/1 Arial,sans-serif;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.section-export-btn.excel-btn{color:#19764d;border-color:#9fd3b8}
+.section-export-btn.image-btn{color:#145a91;border-color:#a9cbe4}
+.section-export-btn:hover{transform:none;filter:brightness(.98)}
+@media(max-width:560px){
+  .section-export-btn{padding:6px 8px;font-size:11px}
+  .section-export-actions{gap:5px}
+}
+</style>
+
+
+<style>
+.indicator-export-row{
+  display:flex!important;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  width:100%;
+  box-sizing:border-box;
+}
+.indicator-export-row > span:first-child{min-width:0}
+.indicator-export-row .blockwise-export-actions{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  flex-shrink:0;
+}
+@media(max-width:700px){
+  .indicator-export-row{flex-wrap:wrap}
+  .indicator-export-row .blockwise-export-actions{margin-left:0}
+}
+</style>
+
+<style>
+.indicator-export-row{display:flex!important;align-items:center;justify-content:space-between;gap:12px;width:100%;box-sizing:border-box}
+.indicator-export-row .blockwise-export-actions{margin-left:auto;display:flex;align-items:center;gap:7px;flex-shrink:0}
+@media(max-width:700px){.indicator-export-row{flex-wrap:wrap}.indicator-export-row .blockwise-export-actions{margin-left:0}}
+</style>
+
+<style>
+#darComboPanel .kpi-final-row,#surveyComboPanel .kpi-final-row{
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+}
+@media(max-width:1100px){
+  #darComboPanel .kpi-final-row,#surveyComboPanel .kpi-final-row{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+@media(max-width:700px){
+  #darComboPanel .kpi-final-row,#surveyComboPanel .kpi-final-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+</style>
