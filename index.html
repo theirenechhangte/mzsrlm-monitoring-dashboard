@@ -3499,7 +3499,7 @@ loadExtra();
     const totalMobile=data.reduce((s,x)=>s+(Number(x.mobile)||0),0);
     const totalMV=data.reduce((s,x)=>s+(Number(x.mobileVerified)||0),0);
     const overallBank=totalMembers?totalBank/totalMembers*100:0;
-    const overallEkyc=totalAad?totalEkyc/totalAad*100:0;
+    const overallEkyc=totalAad?totalEkyc/totalMembers*100:0;
     const overallMobile=totalMobile?totalMV/totalMobile*100:0;
     const cardGap=20, cardW=(W-side*2-cardGap*2)/3, cardY=195, cardH=140;
     const cards=[["BANK A/c",overallBank,"Bank account coverage"],["e-KYC",overallEkyc,"Aadhaar e-KYC coverage"],["MOBILE VERIFICATION",overallMobile,"Verified mobile coverage"]];
