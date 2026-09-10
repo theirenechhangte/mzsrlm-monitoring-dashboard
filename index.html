@@ -2492,7 +2492,7 @@ function buildKycDataExact(rows,headers){
     out.push({
       connectivity,district,block,members,bank,aadhaar,ekyc,mobile,mobileVerified,
       bankPct:members>0 ? bank*100/members : 0,
-      ekycPct:aadhaar>0 ? ekyc*100/members : 0,
+      ekycPct:members>0 ? ekyc*100/members : 0,
       mobilePct:mobile>0 ? mobileVerified*100/mobile : 0
     });
   }
