@@ -2209,7 +2209,7 @@ tr:hover td,.extra-table tr:hover td{
   <div id="kycStatusSummary" class="kyc-status-summary">
     <div class="overall">
       <div><small>Bank A/c %</small><strong id="overallBank">—</strong></div>
-      <div><small>e-KYC Aadhaar %</small><strong id="overallEkyc">—</strong></div>
+      <div><small>e-KYC %</small><strong id="overallEkyc">—</strong></div>
       <div><small>Mobile Verified %</small><strong id="overallMobile">—</strong></div>
     </div>
   </div>
@@ -2636,7 +2636,7 @@ function updateOverall(){
   const ekyc=data.reduce((s,r)=>s+r.ekyc,0),mob=data.reduce((s,r)=>s+r.mobile,0),mv=data.reduce((s,r)=>s+r.mobileVerified,0);
   /* The member-count card was intentionally removed from the KYC summary. */
   document.getElementById("overallBank").textContent=(members?bank/members*100:0).toFixed(2)+"%";
-  document.getElementById("overallEkyc").textContent=(aad?ekyc/aad*100:0).toFixed(2)+"%";
+  document.getElementById("overallEkyc").textContent=(members?ekyc/members*100:0).toFixed(2)+"%";
   document.getElementById("overallMobile").textContent=(mob?mv/mob*100:0).toFixed(2)+"%";
 }
 function filteredRows(){
